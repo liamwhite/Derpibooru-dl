@@ -28,7 +28,7 @@ import HTMLParser
 import json
 
 # getwithinfo()
-GET_REQUEST_DELAY = 3
+GET_REQUEST_DELAY = 2
 GET_RETRY_DELAY = 30
 GET_MAX_ATTEMPTS = 20
 
@@ -328,7 +328,7 @@ def download_submission(settings,search_tag,submission_id):
     # Save image
     save_file(image_output_path, image_data, True)
     # Save JSON
-    save_file(json_output_path, image_data, True)
+    save_file(json_output_path, json_page, True)
     return
 
 
@@ -369,4 +369,4 @@ if __name__ == '__main__':
         logger.critical("Unhandled exception!")
         logging.exception(e)
     logging.info( "Program finished.")
-    raw_input("Press return to close")
+    #raw_input("Press return to close")
