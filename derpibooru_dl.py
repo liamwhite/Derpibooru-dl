@@ -305,7 +305,7 @@ def search_for_tag(settings,search_tag):
         this_page_item_ids = []
         for item_dict in search_page_list:
             item_id = item_dict["id_number"]
-            this_page_item_ids.append(item_id)
+            this_page_item_ids.append(str(item_id))
         # Test if submissions seen are duplicates
         if this_page_item_ids == last_page_items:
             logging.debug("This pages items match the last pages, stopping search.")
@@ -321,7 +321,7 @@ def download_submission(settings,search_tag,submission_id):
     """Download a submission from Derpibooru"""
     assert_is_string(search_tag)
     assert_is_string(submission_id)
-    logging.debug("Downloading submission:"+submission_id)
+    #logging.debug("Downloading submission:"+submission_id)
     # Build JSON paths
     json_output_filename = submission_id+".json"
     json_output_path = os.path.join(settings.output_folder,search_tag,"json",json_output_filename)
@@ -366,6 +366,7 @@ def process_tag(settings,search_tag):
     submission_counter = 0
     for submission_id in submission_ids:
         submission_counter+= 1
+        logging.debug("Now working on submission "+str(cubmission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id )
         download_submission(settings, search_tag, submission_id)
     return
 
