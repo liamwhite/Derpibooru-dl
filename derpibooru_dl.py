@@ -471,7 +471,7 @@ def process_tag(settings,search_tag):
 def download_tags(settings,tag_list):
     for search_tag in tag_list:
         # remove invalid items
-        if not re.search("[^\d]",submission_id):
+        if not re.search("[^\d]",search_tag):
             logging.debug("Only digits! skipping.")
             continue
         logging.info("Now processing tag "":"+search_tag)
@@ -496,7 +496,7 @@ def main():
         logging.warning("No API key set, weird things may happen.")
     # Load tag list
     tag_list = import_list("config\\derpibooru_dl_tag_list.txt")
-    submission_list = import_list("config\\derpibooru_dl_submission_id_list.txt")
+    submission_list = tag_list #import_list("config\\derpibooru_dl_submission_id_list.txt")
     # DEBUG
     #download_submission(settings,"DEBUG","44819")
     #print search_for_tag(settings,"test")
