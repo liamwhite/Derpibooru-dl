@@ -144,7 +144,6 @@ def save_file(filenamein,data,force_save=False):
     file.close()
 
 
-
 def delay(basetime,upperrandom=5):
     #replacement for using time.sleep, this adds a random delay to be sneaky
     sleeptime = basetime + random.randint(0,upperrandom)
@@ -448,8 +447,6 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                 return True
 
 
-
-
 def download_submission(settings,search_tag,submission_id):
     """Download a submission from Derpibooru"""
     assert_is_string(search_tag)
@@ -551,7 +548,6 @@ def main():
     # Download individual submissions
     if settings.download_submission_ids_list:
         download_submission_id_list(settings,submission_list)
-
 
 
 if __name__ == '__main__':
