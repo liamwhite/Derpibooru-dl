@@ -104,6 +104,8 @@ def getwithinfo(url):
             if "html" in info["content-type"]:
                 #print "saving debug html"
                 save_file("debug\\get_last_html.htm", reply, True)
+            else:
+                save_file("debug\\get_last_not_html.txt", reply, True)
             return reply,info
         except urllib2.HTTPError, err:
             logging.debug(str(err))
@@ -255,7 +257,7 @@ class config_handler():
         config.read(settings_path)
         # Login
         try:
-            self.username = config.get('Login', 'api_key')
+            self.api_key = config.get('Login', 'api_key')
         except ConfigParser.NoOptionError:
             pass
         # Download Settings
@@ -321,8 +323,8 @@ def setup_browser():
     br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
 
 
-def search_for_tag(settings,search_tag):
-    """Perform search for a tag on derpibooru.
+def search_for_query(settings,search_tag):
+    """Perform search for a query on derpibooru.
     Return a lost of found submission IDs"""
     assert_is_string(search_tag)
     logging.debug("Starting search for tag: "+search_tag)
@@ -340,12 +342,53 @@ def search_for_tag(settings,search_tag):
         search_page = get(search_url)
         if search_page is None:
             break
+        print search_page
         # Extract submission_ids from page
         # Convert JSON to dict
         search_page_list = decode_json(search_page)
+        print search_page_list
         # Extract item ids
         this_page_item_ids = []
         for item_dict in search_page_list:
+            item_id = item_dict["id_number"]
+            this_page_item_ids.append(str(item_id))
+        # Test if submissions seen are duplicates
+        if this_page_item_ids == last_page_items:
+            logging.debug("This pages items match the last pages, stopping search.")
+            break
+        last_page_items = this_page_item_ids
+        # Append this pages item ids to main list
+        found_submissions += this_page_item_ids
+    # Return found items
+    return found_submissions
+
+
+def search_for_tag(settings,search_tag):
+    """Perform search for a tag on derpibooru.
+    Return a lost of found submission IDs"""
+    assert_is_string(search_tag)
+    logging.debug("Starting search for tag: "+search_tag)
+    page_counter = 0 # Init counter
+    max_pages = 5000 # Saftey limit
+    found_submissions = []
+    last_page_items = []
+    while page_counter <= max_pages:
+        # Incriment page counter
+        page_counter += 1
+        logging.debug("Scanning page "+str(page_counter)+" for tag: "+search_tag)
+        # Generate page URL
+        tag_url = "https://derpibooru.org/tags/"+search_tag+".json?page="+str(page_counter)+"&key="+settings.api_key
+        # Load page
+        search_page = get(tag_url)
+        if search_page is None:
+            break
+        # Extract submission_ids from page
+        # Convert JSON to dict
+        search_page_dict = decode_json(search_page)
+        # Extract item ids
+        this_page_item_ids = []
+        this_page_submissions = search_page_dict["images"]
+        for item_dict in this_page_submissions:
             item_id = item_dict["id_number"]
             this_page_item_ids.append(str(item_id))
         # Test if submissions seen are duplicates
@@ -424,6 +467,7 @@ def download_submission(settings,search_tag,submission_id):
         logging.debug("JSON for this submission already exists, skipping.")
         return
     # Check for dupliactes in download folder
+    output_folder = os.path.join(settings.output_folder,search_tag)
     if copy_over_if_duplicate(settings, submission_id, output_folder):
         return
     # Build JSON URL
@@ -440,7 +484,7 @@ def download_submission(settings,search_tag,submission_id):
     image_file_ext = json_dict["original_format"]
     # Build image output filenames
     image_output_filename = settings.filename_prefix+submission_id+"."+image_file_ext
-    image_output_path = os.path.join(settings.output_folder,search_tag,image_output_filename)
+    image_output_path = os.path.join(output_folder,image_output_filename)
     # Load image data
     authenticated_image_url = image_url+"?"+settings.api_key
     image_data = get(authenticated_image_url)
