@@ -501,7 +501,7 @@ def process_tag(settings,search_tag):
     submission_counter = 0
     for submission_id in submission_ids:
         submission_counter+= 1
-        logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id )
+        logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for tag: "+search_tag )
         download_submission(settings, search_tag, submission_id)
     return
 
