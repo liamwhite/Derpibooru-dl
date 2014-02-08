@@ -283,14 +283,38 @@ def search_for_tag(settings,search_tag):
     """Perform search for a tag on derpibooru.
     Return a lost of found submission IDs"""
     assert_is_string(search_tag)
-    logging.debug("Starting search for: "+search_tag)
-    # Init counter
-    page_counter = 1
-    # Generate page URL
-    # Load page
-    # Extract submission_ids from page
-    # Incriment page counter
+    logging.debug("Starting search for tag: "+search_tag)
+    page_counter = 0 # Init counter
+    max_pages = 5000 # Saftey limit
+    found_submissions = []
+    last_page_items = []
+    while page_counter <= max_pages:
+        # Incriment page counter
+        page_counter += 1
+        logging.debug("Scanning page "+str(page_counter)+" for tag: "+search_tag)
+        # Generate page URL
+        search_url = "https://derpibooru.org/search.json?q="+search_tag+"&page="+str(page_counter)+"&key="+settings.api_key
+        # Load page
+        search_page = get(search_url)
+        if search_page is None:
+            break
+        # Extract submission_ids from page
+        # Convert JSON to dict
+        search_page_list = decode_json(search_page)
+        # Extract item ids
+        this_page_item_ids = []
+        for item_dict in search_page_list:
+            item_id = item_dict["id_number"]
+            this_page_item_ids.append(item_id)
+        # Test if submissions seen are duplicates
+        if this_page_item_ids == last_page_items:
+            logging.debug("This pages items match the last pages, stopping search.")
+            break
+        last_page_items = this_page_item_ids
+        # Append this pages item ids to main list
+        found_submissions += this_page_item_ids
     # Return found items
+    return found_submissions
 
 
 def download_submission(settings,search_tag,submission_id):
@@ -335,11 +359,15 @@ def download_submission(settings,search_tag,submission_id):
 def process_tag(settings,search_tag):
     """Download submissions for a tag on derpibooru"""
     assert_is_string(search_tag)
+    logging.info("Processing tag: "+search_tag)
     # Run search for tag
     submission_ids = search_for_tag(settings, search_tag)
     # Download all found items
+    submission_counter = 0
     for submission_id in submission_ids:
+        submission_counter+= 1
         download_submission(settings, search_tag, submission_id)
+    return
 
 
 def main():
@@ -348,19 +376,20 @@ def main():
     # Load tag list
     tag_list = import_list("config\\derpibooru_dl_tag_list.txt")
     # DEBUG
-    download_submission(settings,"DEBUG","44819")
-    return
+    #download_submission(settings,"DEBUG","44819")
+    #print search_for_tag(settings,"test")
+    process_tag(settings,"test")
     # /DEBUG
     # Process each submission_id on tag list
     for search_tag in tag_list:
         logging.info("Now starting tag:"+search_tag)
         process_tag(settings, search_tag)
 
+
 if __name__ == '__main__':
     # Setup logging
     setup_logging("debug\\derpibooru_dl_log.txt")
     try:
-
         cj = cookielib.LWPCookieJar()
         setup_browser()
         main()
