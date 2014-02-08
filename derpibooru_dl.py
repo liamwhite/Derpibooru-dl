@@ -411,10 +411,8 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
     expected_submission_filename = "*"+submission_id+".*"
     # Generate search pattern
     glob_string = os.path.join(settings.output_folder, "*", expected_submission_filename)
-    print glob_string
     # Use glob to check for existing files matching the expected pattern
     glob_matches = glob.glob(glob_string)
-    print glob_matches
     # Check if any matches, if no matches then return False
     if len(glob_matches) == 0:
         return False
@@ -426,7 +424,6 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                 return True
             else:
                 # Copy over submission file and metadata JSON
-                print "copy to", output_folder
                 # Check output folders exist
                 # Build expected paths
                 match_dir, match_filename = os.path.split(glob_match)
@@ -436,13 +433,13 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                 json_output_folder = os.path.join(output_folder, "json")
                 json_output_filename = submission_id+".json"
                 json_output_path = os.path.join(json_output_folder, json_output_filename)
-                print json_output_path
                 submission_output_path = os.path.join(output_folder,match_filename)
                 # Ensure output path exists
                 if not os.path.exists(json_output_folder):
                     os.makedirs(json_output_folder)
                 if not os.path.exists(output_folder):
                     os.makedirs(output_folder)
+                logging.info("Copying files for submission: "+submission_id+" from "+match_dir+" to "+output_folder)
                 # Copy over files
                 # Copy submission file
                 shutil.copy2(glob_match, submission_output_path)
