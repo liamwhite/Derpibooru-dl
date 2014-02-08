@@ -190,17 +190,43 @@ def import_list(listfilename="ERROR.txt"):
         for line in listfile:
             if line[0] != '#' and line[0] != '\n':#skip likes starting with '#' and the newline character
                 if line[-1] == '\n':#remove trailing newline if it exists
-                    strippedline = line[:-1]
+                    stripped_line = line[:-1]
                 else:
-                    strippedline = line#if no trailing newline exists, we dont need to strip it
-                nameslist.append(strippedline)#add the username to the list
+                    stripped_line = line#if no trailing newline exists, we dont need to strip it
+                replaced_line = re.sub(" ", '+', stripped_line)# Replace spaces with plusses
+                nameslist.append(replaced_line)#add the username to the list
         listfile.close()
         return nameslist
     else:#if there is no list, make one
         listfile = open(listfilename, 'w')
-        listfile.write('#add one tag per line, comments start with a #, nothing but tag on a lise that isnt a comment')
+        listfile.write('#add one tag per line, comments start with a #, nothing but tag on a lise that isnt a comment\n')
         listfile.close()
         return []
+
+
+def append_list(lines,list_file_path="weasyl_done_list.txt",initial_text="# List of completed items.\n"):
+    # Append a string or list of strings to a file; If no file exists, create it and append to the new file.
+    # Strings will be seperated by newlines.
+    # Make sure we're saving a list of strings.
+    if ((type(lines) is type(""))or (type(lines) is type(u""))):
+        lines = [lines]
+    # Ensure file exists.
+    if not os.path.exists(list_file_path):
+        list_file_segments = os.path.split(list_file_path)
+        list_dir = list_file_segments[0]
+        if list_dir:
+            if not os.path.exists(list_dir):
+                os.makedirs(list_dir)
+        nf = open(list_file_path, "w")
+        nf.write(initial_text)
+        nf.close()
+    # Write data to file.
+    f = open(list_file_path, "a")
+    for line in lines:
+        outputline = line+"\n"
+        f.write(outputline)
+    f.close()
+    return
 
 
 class config_handler():
@@ -342,7 +368,7 @@ def download_submission(settings,search_tag,submission_id):
     image_filename = json_dict["file_name"]
     image_file_ext = json_dict["original_format"]
     # Build image output filenames
-    image_output_filename = image_filename+"."+image_file_ext
+    image_output_filename = submission_id+"."+image_file_ext
     image_output_path = os.path.join(settings.output_folder,search_tag,image_output_filename)
     # Load image data
     authenticated_image_url = image_url+"?"+settings.api_key
@@ -359,14 +385,14 @@ def download_submission(settings,search_tag,submission_id):
 def process_tag(settings,search_tag):
     """Download submissions for a tag on derpibooru"""
     assert_is_string(search_tag)
-    logging.info("Processing tag: "+search_tag)
+    #logging.info("Processing tag: "+search_tag)
     # Run search for tag
     submission_ids = search_for_tag(settings, search_tag)
     # Download all found items
     submission_counter = 0
     for submission_id in submission_ids:
         submission_counter+= 1
-        logging.debug("Now working on submission "+str(cubmission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id )
+        logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id )
         download_submission(settings, search_tag, submission_id)
     return
 
@@ -374,17 +400,20 @@ def process_tag(settings,search_tag):
 def main():
     # Load settings
     settings = config_handler("config\\derpibooru_dl_config.cfg")
+    if len(settings.api_key) < 5:
+        logging.warning("No API key set, weird things may happen.")
     # Load tag list
     tag_list = import_list("config\\derpibooru_dl_tag_list.txt")
     # DEBUG
     #download_submission(settings,"DEBUG","44819")
     #print search_for_tag(settings,"test")
-    process_tag(settings,"test")
+    #process_tag(settings,"test")
     # /DEBUG
     # Process each submission_id on tag list
     for search_tag in tag_list:
-        logging.info("Now starting tag:"+search_tag)
+        logging.info("Now processing tag "":"+search_tag)
         process_tag(settings, search_tag)
+        append_list(search_tag, "config\\derpibooru_done_list.txt")
 
 
 if __name__ == '__main__':
