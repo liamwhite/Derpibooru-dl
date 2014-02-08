@@ -241,6 +241,8 @@ class config_handler():
         # Download Settings
         self.reverse = False
         self.output_folder = "download"
+        self.download_tags_list = True
+        self.download_submission_ids_list = True
 
     def load_file(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -254,11 +256,19 @@ class config_handler():
             pass
         # Download Settings
         try:
-            self.reverse = config.getboolean('Settings', 'Reverse')
+            self.reverse = config.getboolean('Settings', 'reverse')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.username = config.get('Settings', 'output_folder')
+            self.output_folder = config.get('Settings', 'output_folder')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.download_tags_list = config.getboolean('Settings', 'download_tags_list')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.download_submission_ids_list = config.getboolean('Settings', 'download_submission_ids_list')
         except ConfigParser.NoOptionError:
             pass
 
@@ -267,8 +277,10 @@ class config_handler():
         config.add_section('Login')
         config.set('Login', 'api_key', self.api_key )
         config.add_section('Settings')
-        config.set('Settings', 'Reverse', str(self.reverse) )
+        config.set('Settings', 'reverse', str(self.reverse) )
         config.set('Settings', 'output_folder', self.output_folder )
+        config.set('Settings', 'download_tags_list', str(self.download_tags_list) )
+        config.set('Settings', 'download_submission_ids_list', str(self.download_submission_ids_list) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
 
@@ -368,7 +380,7 @@ def download_submission(settings,search_tag,submission_id):
     image_filename = json_dict["file_name"]
     image_file_ext = json_dict["original_format"]
     # Build image output filenames
-    image_output_filename = submission_id+"."+image_file_ext
+    image_output_filename = "derpi_"+submission_id+"."+image_file_ext
     image_output_path = os.path.join(settings.output_folder,search_tag,image_output_filename)
     # Load image data
     authenticated_image_url = image_url+"?"+settings.api_key
@@ -404,16 +416,23 @@ def main():
         logging.warning("No API key set, weird things may happen.")
     # Load tag list
     tag_list = import_list("config\\derpibooru_dl_tag_list.txt")
+    submission_list = import_list("config\\derpibooru_dl_submission_id_list.txt")
     # DEBUG
     #download_submission(settings,"DEBUG","44819")
     #print search_for_tag(settings,"test")
     #process_tag(settings,"test")
     # /DEBUG
     # Process each submission_id on tag list
-    for search_tag in tag_list:
-        logging.info("Now processing tag "":"+search_tag)
-        process_tag(settings, search_tag)
-        append_list(search_tag, "config\\derpibooru_done_list.txt")
+    if settings.download_tags_list:
+        for search_tag in tag_list:
+            logging.info("Now processing tag "":"+search_tag)
+            process_tag(settings, search_tag)
+            append_list(search_tag, "config\\derpibooru_done_list.txt")
+    if settings.download_submission_ids_list:
+        for submission_id in submission_list:
+            logging.info("Now trying submissionID: "+submission_id)
+            download_submission(settings, "from_list", submission_id)
+
 
 
 if __name__ == '__main__':
