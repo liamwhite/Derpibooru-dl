@@ -1,0 +1,4 @@
+debug/
+config/
+download/
+*.pyc

@@ -23,8 +23,9 @@ import urllib2
 import httplib
 import random
 import glob
-
-
+import ConfigParser
+import HTMLParser
+import json
 
 # getwithinfo()
 GET_REQUEST_DELAY = 3
@@ -40,8 +41,9 @@ def setup_logging(log_file_path):
     assert( len(log_file_path) > 1 )
     assert( type(log_file_path) == type("") )
     global logger
-    if not os.path.exists( os.path.split(log_file_path)[0] ):
-        os.makedirs(log_file_path)
+    log_file_folder =  os.path.split(log_file_path)[0]
+    if not os.path.exists(log_file_folder):
+        os.makedirs(log_file_folder)
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -55,6 +57,13 @@ def setup_logging(log_file_path):
     logger.addHandler(ch)
     logging.debug('Logging started.')
     # End logging setup
+
+
+def deescape(html):
+    # de-escape html
+    # http://stackoverflow.com/questions/2360598/how-do-i-unescape-html-entities-in-a-string-in-python-3-1
+    deescaped_string = HTMLParser.HTMLParser().unescape(html)
+    return deescaped_string
 
 
 def get(url):
@@ -173,29 +182,25 @@ def sanitizepath(pathin):
     return pathout
 
 
-def list_importer(listfilename='list.txt',verbose=True):
-    if verbose == True:
-        print 'loading from: ', listfilename
-    nameslist = []#make an empty list
-    listfile = open(listfilename, 'rU')
-    for line in listfile:
-        if line[0] != '#' and line[0] != '\n':#skip likes starting with '#' and the newline character
-            if line[-1] == '\n':#remove trailing newline if it exists
-                strippedline = line[:-1]
-            else:
-                strippedline = line#if no trailing newline exists, we dont need to strip it
-            nameslist.append(strippedline)#add the username to the list
-    listfile.close()
-    # Remove known bad names
-    badnames = []
-    oknames = []
-    for name in nameslist:
-        if name in badnames:
-            print 'badname:',name
-        else:
-            oknames.append(name)
-    return oknames
-    print 'listimporter done'
+def import_list(listfilename="ERROR.txt"):
+    nameslist = []
+    if os.path.exists(listfilename):#check if there is a list
+        nameslist = []#make an empty list
+        listfile = open(listfilename, 'rU')
+        for line in listfile:
+            if line[0] != '#' and line[0] != '\n':#skip likes starting with '#' and the newline character
+                if line[-1] == '\n':#remove trailing newline if it exists
+                    strippedline = line[:-1]
+                else:
+                    strippedline = line#if no trailing newline exists, we dont need to strip it
+                nameslist.append(strippedline)#add the username to the list
+        listfile.close()
+        return nameslist
+    else:#if there is no list, make one
+        listfile = open(listfilename, 'w')
+        listfile.write('#add one tag per line, comments start with a #, nothing but tag on a lise that isnt a comment')
+        listfile.close()
+        return []
 
 
 class config_handler():
@@ -213,6 +218,8 @@ class config_handler():
 
     def load_file(self,settings_path):
         config = ConfigParser.RawConfigParser()
+        if not os.path.exists(settings_path):
+            return
         config.read(settings_path)
         # Login
         try:
@@ -228,6 +235,7 @@ class config_handler():
             self.username = config.get('Settings', 'output_folder')
         except ConfigParser.NoOptionError:
             pass
+
     def save_settings(self,settings_path):
         config = ConfigParser.RawConfigParser()
         config.add_section('Login')
@@ -300,7 +308,7 @@ def download_submission(settings,search_tag,submission_id):
     # Build JSON URL
     json_url = "https://derpibooru.org/"+submission_id+".json?"+settings.api_key
     # Load JSON URL
-    json_page = get(settings,json_url)
+    json_page = get(json_url)
     if json_page is None:
         return
     # Convert JSON to dict
@@ -336,9 +344,9 @@ def process_tag(settings,search_tag):
 
 def main():
     # Load settings
-    settings = config_handler()
+    settings = config_handler("config\\derpibooru_dl_config.cfg")
     # Load tag list
-    tag_list = list_importer("derpibooru_dl_tag_list.txt")
+    tag_list = import_list("config\\derpibooru_dl_tag_list.txt")
     # DEBUG
     download_submission(settings,"DEBUG","44819")
     return
