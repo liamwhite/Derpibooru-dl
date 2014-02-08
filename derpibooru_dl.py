@@ -26,6 +26,9 @@ import glob
 import ConfigParser
 import HTMLParser
 import json
+import shutil
+
+
 
 # getwithinfo()
 GET_REQUEST_DELAY = 2
@@ -243,6 +246,7 @@ class config_handler():
         self.output_folder = "download"
         self.download_tags_list = True
         self.download_submission_ids_list = True
+        self.filename_prefix = "derpi_"
 
     def load_file(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -355,6 +359,57 @@ def search_for_tag(settings,search_tag):
     return found_submissions
 
 
+def copy_over_if_duplicate(settings,submission_id,output_folder):
+    """Check if there is already a copy of the submission downloaded in the download path.
+    If there is, copy the existing version to the suppplied output location then return True
+    If no copy can be found, return False"""
+    assert_is_string(submission_id)
+    # Generate expected filename pattern
+    expected_submission_filename = "*"+submission_id+".*"
+    # Generate search pattern
+    glob_string = os.path.join(settings.output_folder, "*", expected_submission_filename)
+    print glob_string
+    # Use glob to check for existing files matching the expected pattern
+    glob_matches = glob.glob(glob_string)
+    print glob_matches
+    # Check if any matches, if no matches then return False
+    if len(glob_matches) == 0:
+        return False
+    else:
+        # If there is an existing version:
+        for glob_match in glob_matches:
+            # If there is an existing version in the output path, nothing needs to be copied
+            if output_folder in glob_match:
+                return True
+            else:
+                # Copy over submission file and metadata JSON
+                print "copy to", output_folder
+                # Check output folders exist
+                # Build expected paths
+                match_dir, match_filename = os.path.split(glob_match)
+                expected_json_input_filename = submission_id+".json"
+                expected_json_input_folder = os.path.join(match_dir, "json")
+                expected_json_input_location = os.path.join(expected_json_input_folder, expected_json_input_filename)
+                json_output_folder = os.path.join(output_folder, "json")
+                json_output_filename = submission_id+".json"
+                json_output_path = os.path.join(json_output_folder, json_output_filename)
+                print json_output_path
+                submission_output_path = os.path.join(output_folder,match_filename)
+                # Ensure output path exists
+                if not os.path.exists(json_output_folder):
+                    os.makedirs(json_output_folder)
+                if not os.path.exists(output_folder):
+                    os.makedirs(output_folder)
+                # Copy over files
+                # Copy submission file
+                shutil.copy2(glob_match, submission_output_path)
+                # Copy JSON
+                shutil.copy2(expected_json_input_location, json_output_path)
+                return True
+
+
+
+
 def download_submission(settings,search_tag,submission_id):
     """Download a submission from Derpibooru"""
     assert_is_string(search_tag)
@@ -363,9 +418,13 @@ def download_submission(settings,search_tag,submission_id):
     # Build JSON paths
     json_output_filename = submission_id+".json"
     json_output_path = os.path.join(settings.output_folder,search_tag,"json",json_output_filename)
+    # Check if download can be skipped
     # Check if JSON exists
     if os.path.exists(json_output_path):
         logging.debug("JSON for this submission already exists, skipping.")
+        return
+    # Check for dupliactes in download folder
+    if copy_over_if_duplicate(settings, submission_id, output_folder):
         return
     # Build JSON URL
     json_url = "https://derpibooru.org/"+submission_id+".json?"+settings.api_key
@@ -380,7 +439,7 @@ def download_submission(settings,search_tag,submission_id):
     image_filename = json_dict["file_name"]
     image_file_ext = json_dict["original_format"]
     # Build image output filenames
-    image_output_filename = "derpi_"+submission_id+"."+image_file_ext
+    image_output_filename = settings.filename_prefix+submission_id+"."+image_file_ext
     image_output_path = os.path.join(settings.output_folder,search_tag,image_output_filename)
     # Load image data
     authenticated_image_url = image_url+"?"+settings.api_key
@@ -409,6 +468,27 @@ def process_tag(settings,search_tag):
     return
 
 
+def download_tags(settings,tag_list):
+    for search_tag in tag_list:
+        # remove invalid items
+        if not re.search("[^\d]",submission_id):
+            logging.debug("Only digits! skipping.")
+            continue
+        logging.info("Now processing tag "":"+search_tag)
+        process_tag(settings, search_tag)
+        append_list(search_tag, "config\\derpibooru_done_list.txt")
+
+
+def download_submission_id_list(settings,submission_list):
+    for submission_id in submission_list:
+        # remove invalid items
+        if re.search("[^\d]",submission_id):
+            logging.debug("Not a submissionid")
+            continue
+        logging.info("Now trying submissionID: "+submission_id)
+        download_submission(settings, "from_list", submission_id)
+
+
 def main():
     # Load settings
     settings = config_handler("config\\derpibooru_dl_config.cfg")
@@ -421,17 +501,15 @@ def main():
     #download_submission(settings,"DEBUG","44819")
     #print search_for_tag(settings,"test")
     #process_tag(settings,"test")
+    #copy_over_if_duplicate(settings,"134533","download\\flitterpony")
+    #return
     # /DEBUG
     # Process each submission_id on tag list
     if settings.download_tags_list:
-        for search_tag in tag_list:
-            logging.info("Now processing tag "":"+search_tag)
-            process_tag(settings, search_tag)
-            append_list(search_tag, "config\\derpibooru_done_list.txt")
+        download_tags(settings,tag_list)
+    # Download individual submissions
     if settings.download_submission_ids_list:
-        for submission_id in submission_list:
-            logging.info("Now trying submissionID: "+submission_id)
-            download_submission(settings, "from_list", submission_id)
+        download_submission_id_list(settings,submission_list)
 
 
 
