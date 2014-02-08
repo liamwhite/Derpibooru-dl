@@ -420,7 +420,7 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
         for glob_match in glob_matches:
             # If there is an existing version in the output path, nothing needs to be copied
             if output_folder in glob_match:
-                return True
+                return False
             else:
                 # Copy over submission file and metadata JSON
                 # Check output folders exist
