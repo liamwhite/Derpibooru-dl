@@ -561,9 +561,11 @@ def resume_downloads(settings):
         # Read pickle:
         resume_dict = read_pickle(settings.resume_file_path)
         search_tag = resume_dict["search_tag"]
-        submission_id_list = resume_dict["submission_ids"]
+        submission_ids = resume_dict["submission_ids"]
         # Iterate over submissions
-        for submission_id in submission_id_list:
+        submission_counter = 0
+        for submission_id in submission_ids:
+            submission_counter += 1
             logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for resumed tag: "+search_tag )
             # Try downloading each submission
             download_submission(settings, search_tag, submission_id)
@@ -588,7 +590,7 @@ def process_tag(settings,search_tag):
     # Download all found items
     submission_counter = 0
     for submission_id in submission_ids:
-        submission_counter+= 1
+        submission_counter += 1
         logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for tag: "+search_tag )
         download_submission(settings, search_tag, submission_id)
     append_list(search_tag, "config\\derpibooru_done_list.txt")
