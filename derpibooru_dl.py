@@ -92,7 +92,7 @@ def getwithinfo(url):
     while attemptcount < GET_MAX_ATTEMPTS:
         attemptcount = attemptcount + 1
         if attemptcount > 1:
-            logging.debug( "Attempt" + str(attemptcount) )
+            logging.debug( "Attempt " + str(attemptcount) )
         try:
             r = br.open(url)
             info = r.info()
@@ -120,12 +120,19 @@ def getwithinfo(url):
                 return
             else:
                 save_file("debug\\error.htm", err.fp.read(), True)
+                continue
         except urllib2.URLError, err:
             logging.debug(str(err))
             if "unknown url type:" in err.reason:
                 return
+            else:
+                continue
         except httplib.BadStatusLine, err:
             logging.debug(str(err))
+            continue
+        except mechanize.BrowserStateError, err:
+            logging.debug(str(err))
+            continue
         delay(GET_RETRY_DELAY)
 
 
@@ -248,6 +255,7 @@ class config_handler():
         self.download_tags_list = True
         self.download_submission_ids_list = True
         self.filename_prefix = "derpi_"
+        self.resume_file_path = "config\\resume.pkl"
 
     def load_file(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -303,6 +311,13 @@ def decode_json(json_string):
     assert_is_string(json_string)
     return json.loads(json_string)
 
+
+def read_file(path):
+    """grab the contents of a file"""
+    f = open(path, "r")
+    data = f.read()
+    f.close()
+    return data
 
 def setup_browser():
     #Initialize browser object to global variable "br" using cokie jar "cj"
@@ -491,18 +506,86 @@ def download_submission(settings,search_tag,submission_id):
     return
 
 
+
+
+
+def read_pickle(file_path):
+    file_data = read_file(file_path)
+    pickle.loads(file_data)
+    return pickle_data
+
+
+def save_pickle(path,data):
+    # Save data to pickle file
+    # Ensure folder exists.
+    if not os.path.exists(path):
+        pickle_path_segments = os.path.split(path)
+        pickle_dir = pickle_path_segments[0]
+        if pickle_dir:# Make sure we aren't at the script root
+            if not os.path.exists(pickle_dir):
+                os.makedirs(pickle_dir)
+    pf = open(path, "wb")
+    pickle.dump(data, pf)
+    pf.close()
+    return
+
+def save_resume_file(settings,search_tag,submission_ids):
+    # Save submissionIDs and search_tag to pickle
+    logging.debug("Saving resume data pickle")
+    # {"search_tag":"FOO", "submission_ids":["1","2"]}
+    # Build dict
+    resume_dict = {
+    "search_tag":search_tag,
+    "submission_ids":submission_ids
+    }
+    save_pickle(settings.resume_file_path, resume_dict)
+    return
+
+def clear_resume_file(settings):
+    # Erase pickle
+    logging.debug("Erasing resume data pickle")
+    os.remove(settings.resume_file_path)
+    return
+
+def resume_downloads(settings):
+    # Look for pickle of submissions to iterate over
+    if os.path.exists(settings.resume_file_path):
+        logging.debug("Resuming from pickle")
+        # Read pickle:
+        resume_dict = read_pickle(settings.resume_file_path)
+        search_tag = resume_dict["search_tag"]
+        submission_ids = resume_dict["submission_ids"]
+        # Iterate over submissions
+        for submission_id in submission_id_list:
+            # Try downloading each submission
+            download_submission(settings, search_tag, submission_id)
+        # Clear temp file
+        clear_resume_file(settings)
+        return search_tag
+    else:
+        return False
+
+
+
+
+
 def process_tag(settings,search_tag):
     """Download submissions for a tag on derpibooru"""
     assert_is_string(search_tag)
     #logging.info("Processing tag: "+search_tag)
     # Run search for tag
     submission_ids = search_for_tag(settings, search_tag)
+    #Save data for resuming
+    save_resume_file(settings,search_tag,submission_ids)
     # Download all found items
     submission_counter = 0
     for submission_id in submission_ids:
         submission_counter+= 1
         logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for tag: "+search_tag )
         download_submission(settings, search_tag, submission_id)
+    append_list(search_tag, "config\\derpibooru_done_list.txt")
+    # Clear temp data
+    clear_resume_file(settings)
     return
 
 
@@ -534,7 +617,7 @@ def main():
         logging.warning("No API key set, weird things may happen.")
     # Load tag list
     tag_list = import_list("config\\derpibooru_dl_tag_list.txt")
-    submission_list = tag_list #import_list("config\\derpibooru_dl_submission_id_list.txt")
+    #submission_list = import_list("config\\derpibooru_dl_submission_id_list.txt")
     # DEBUG
     #download_submission(settings,"DEBUG","44819")
     #print search_for_tag(settings,"test")
@@ -542,12 +625,18 @@ def main():
     #copy_over_if_duplicate(settings,"134533","download\\flitterpony")
     #return
     # /DEBUG
+    # Handle resuming
+    resumed_tag = resume_downloads(settings)
+    if resumed_tag is not False:
+        # Skip everything before and including resumed tag
+        tag_list = tag_list[( tag_list.index(resumed_tag) + 1 ):]
+    # Download individual submissions
+    if settings.download_submission_ids_list:
+        download_submission_id_list(settings,tag_list)
     # Process each submission_id on tag list
     if settings.download_tags_list:
         download_tags(settings,tag_list)
-    # Download individual submissions
-    if settings.download_submission_ids_list:
-        download_submission_id_list(settings,submission_list)
+
 
 
 if __name__ == '__main__':
