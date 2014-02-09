@@ -27,11 +27,11 @@ import ConfigParser
 import HTMLParser
 import json
 import shutil
-
+import pickle
 
 
 # getwithinfo()
-GET_REQUEST_DELAY = 2
+GET_REQUEST_DELAY = 0
 GET_RETRY_DELAY = 30
 GET_MAX_ATTEMPTS = 20
 
@@ -152,7 +152,7 @@ def save_file(filenamein,data,force_save=False):
     file.close()
 
 
-def delay(basetime,upperrandom=5):
+def delay(basetime,upperrandom=0):
     #replacement for using time.sleep, this adds a random delay to be sneaky
     sleeptime = basetime + random.randint(0,upperrandom)
     #logging.debug("pausing for "+str(sleeptime)+" ...")
@@ -473,7 +473,7 @@ def download_submission(settings,search_tag,submission_id):
     """Download a submission from Derpibooru"""
     assert_is_string(search_tag)
     assert_is_string(submission_id)
-    #logging.debug("Downloading submission:"+submission_id)
+    logging.debug("Downloading submission:"+submission_id)
     # Build JSON paths
     json_output_filename = submission_id+".json"
     json_output_path = os.path.join(settings.output_folder,search_tag,"json",json_output_filename)
@@ -518,7 +518,7 @@ def download_submission(settings,search_tag,submission_id):
 
 def read_pickle(file_path):
     file_data = read_file(file_path)
-    pickle.loads(file_data)
+    pickle_data = pickle.loads(file_data)
     return pickle_data
 
 
@@ -561,9 +561,10 @@ def resume_downloads(settings):
         # Read pickle:
         resume_dict = read_pickle(settings.resume_file_path)
         search_tag = resume_dict["search_tag"]
-        submission_ids = resume_dict["submission_ids"]
+        submission_id_list = resume_dict["submission_ids"]
         # Iterate over submissions
         for submission_id in submission_id_list:
+            logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for resumed tag: "+search_tag )
             # Try downloading each submission
             download_submission(settings, search_tag, submission_id)
         # Clear temp file
@@ -615,6 +616,7 @@ def download_submission_id_list(settings,submission_list):
             continue
         logging.info("Now trying submissionID: "+submission_id)
         download_submission(settings, "from_list", submission_id)
+        append_list(submission_id, "config\\derpibooru_done_list.txt")
 
 
 def main():
@@ -626,7 +628,7 @@ def main():
     tag_list = import_list("config\\derpibooru_dl_tag_list.txt")
     #submission_list = import_list("config\\derpibooru_dl_submission_id_list.txt")
     # DEBUG
-    #download_submission(settings,"DEBUG","44819")
+    #download_submission(settings,"DEBUG","263139")
     #print search_for_tag(settings,"test")
     #process_tag(settings,"test")
     #copy_over_if_duplicate(settings,"134533","download\\flitterpony")
@@ -636,7 +638,9 @@ def main():
     resumed_tag = resume_downloads(settings)
     if resumed_tag is not False:
         # Skip everything before and including resumed tag
+        logging.debug(str(tag_list))
         tag_list = tag_list[( tag_list.index(resumed_tag) + 1 ):]
+        logging.debug(str(tag_list))
     # Download individual submissions
     if settings.download_submission_ids_list:
         download_submission_id_list(settings,tag_list)
