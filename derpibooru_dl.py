@@ -94,6 +94,7 @@ def getwithinfo(url):
         if attemptcount > 1:
             logging.debug( "Attempt " + str(attemptcount) )
         try:
+            save_file("debug\\get_last_utl.txt", url, True)
             r = br.open(url)
             info = r.info()
             reply = r.read()
@@ -309,7 +310,13 @@ def assert_is_string(object_to_test):
 def decode_json(json_string):
     """Wrapper for JSON decoding"""
     assert_is_string(json_string)
-    return json.loads(json_string)
+    try:
+        json_data = json.loads(json_string)
+        return json_data
+    except ValueError, err:
+        logging.critical(locals())
+        raise(err)
+
 
 
 def read_file(path):
@@ -480,7 +487,7 @@ def download_submission(settings,search_tag,submission_id):
     if copy_over_if_duplicate(settings, submission_id, output_folder):
         return
     # Build JSON URL
-    json_url = "https://derpibooru.org/"+submission_id+".json?"+settings.api_key
+    json_url = "https://derpibooru.org/"+submission_id+".json?key="+settings.api_key
     # Load JSON URL
     json_page = get(json_url)
     if json_page is None:
@@ -495,7 +502,7 @@ def download_submission(settings,search_tag,submission_id):
     image_output_filename = settings.filename_prefix+submission_id+"."+image_file_ext
     image_output_path = os.path.join(output_folder,image_output_filename)
     # Load image data
-    authenticated_image_url = image_url+"?"+settings.api_key
+    authenticated_image_url = image_url+"?key="+settings.api_key
     image_data = get(authenticated_image_url)
     if image_data is None:
         return
