@@ -462,18 +462,23 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                     os.makedirs(output_folder)
                 logging.info("Copying files for submission: "+submission_id+" from "+match_dir+" to "+output_folder)
                 # Copy over files
-                # Copy submission file
-                shutil.copy2(glob_match, submission_output_path)
-                # Copy JSON
-                shutil.copy2(expected_json_input_location, json_output_path)
-                return True
+                try:
+                    # Copy submission file
+                    shutil.copy2(glob_match, submission_output_path)
+                    # Copy JSON
+                    shutil.copy2(expected_json_input_location, json_output_path)
+                    return True
+                except IOError, err:
+                    logging.error("Error copying files!")
+                    logging.exception(err)
+                    return False
 
 
 def download_submission(settings,search_tag,submission_id):
     """Download a submission from Derpibooru"""
     assert_is_string(search_tag)
     assert_is_string(submission_id)
-    logging.debug("Downloading submission:"+submission_id)
+    #logging.debug("Downloading submission:"+submission_id)
     # Build JSON paths
     json_output_filename = submission_id+".json"
     json_output_path = os.path.join(settings.output_folder,search_tag,"json",json_output_filename)
