@@ -495,7 +495,7 @@ def download_submission(settings,search_tag,submission_id):
     json_url = "https://derpibooru.org/"+submission_id+".json?key="+settings.api_key
     # Load JSON URL
     json_page = get(json_url)
-    if json_page is None:
+    if not json_page:
         return
     # Convert JSON to dict
     json_dict = decode_json(json_page)
@@ -509,7 +509,10 @@ def download_submission(settings,search_tag,submission_id):
     # Load image data
     authenticated_image_url = image_url+"?key="+settings.api_key
     image_data = get(authenticated_image_url)
-    if image_data is None:
+    if not image_data:
+        return
+    # Image should always be bigger than this, if it isn't we got a bad file
+    if len(image_data < 100):
         return
     # Save image
     save_file(image_output_path, image_data, True)
