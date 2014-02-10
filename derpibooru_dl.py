@@ -359,7 +359,7 @@ def search_for_query(settings,search_tag):
         page_counter += 1
         logging.debug("Scanning page "+str(page_counter)+" for tag: "+search_tag)
         # Generate page URL
-        search_url = "https://derpibooru.org/search.json?q="+search_tag+"&page="+str(page_counter)+"&key="+settings.api_key
+        search_url = "https://derpibooru.org/search.json?q="+search_tag+"&page="+str(page_counter)+"&key="+settings.api_key+"&nocomments=1&nofave=1"
         # Load page
         search_page = get(search_url)
         if search_page is None:
@@ -388,13 +388,22 @@ def search_for_query(settings,search_tag):
 def parse_tag_results_page(raw_json):
     """Convert raw JSON from a search page into a list of submissionIDs"""
     # Convert JSON to dict
-    search_page_dict = decode_json(search_page)
+    search_page_dict = decode_json(raw_json)
     # Extract item ids
     this_page_item_ids = []
     this_page_submissions = search_page_dict["images"]
+    counter = 0
     for item_dict in this_page_submissions:
-        item_id = item_dict["id_number"]
-        this_page_item_ids.append(str(item_id))
+        counter += 1
+        try:
+            item_id = item_dict["id_number"]
+            this_page_item_ids.append(str(item_id))
+        except TypeError, err:
+            continue
+            logging.error("No data recieved for this submission on the page! Skipping that submission. "+str(counter))
+            logging.error(repr(item_dict))
+            logging.error(raw_json)
+            logging.exception(err)
     return this_page_item_ids
 
 
@@ -412,14 +421,14 @@ def search_for_tag(settings,search_tag):
         page_counter += 1
         logging.debug("Scanning page "+str(page_counter)+" for tag: "+search_tag)
         # Generate page URL
-        tag_url = "https://derpibooru.org/tags/"+search_tag+".json?page="+str(page_counter)+"&key="+settings.api_key
+        tag_url = "https://derpibooru.org/tags/"+search_tag+".json?page="+str(page_counter)+"&key="+settings.api_key+"&nocomments=1&nofave=1"
         # Load page
         search_page = get(tag_url)
         if not search_page:
             logging.error("No page recieved, skipping tag.")
             return
         # Extract submission_ids from page
-        this_page_item_ids= parse_tag_results_page(raw_json)
+        this_page_item_ids= parse_tag_results_page(search_page)
         # Test if submissions seen are duplicates
         if this_page_item_ids == last_page_items:
             logging.debug("This pages items match the last pages, stopping search.")
