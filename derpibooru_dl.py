@@ -385,6 +385,19 @@ def search_for_query(settings,search_tag):
     return found_submissions
 
 
+def parse_tag_results_page(raw_json):
+    """Convert raw JSON from a search page into a list of submissionIDs"""
+    # Convert JSON to dict
+    search_page_dict = decode_json(search_page)
+    # Extract item ids
+    this_page_item_ids = []
+    this_page_submissions = search_page_dict["images"]
+    for item_dict in this_page_submissions:
+        item_id = item_dict["id_number"]
+        this_page_item_ids.append(str(item_id))
+    return this_page_item_ids
+
+
 def search_for_tag(settings,search_tag):
     """Perform search for a tag on derpibooru.
     Return a lost of found submission IDs"""
@@ -402,17 +415,11 @@ def search_for_tag(settings,search_tag):
         tag_url = "https://derpibooru.org/tags/"+search_tag+".json?page="+str(page_counter)+"&key="+settings.api_key
         # Load page
         search_page = get(tag_url)
-        if search_page is None:
-            break
+        if not search_page:
+            logging.error("No page recieved, skipping tag.")
+            return
         # Extract submission_ids from page
-        # Convert JSON to dict
-        search_page_dict = decode_json(search_page)
-        # Extract item ids
-        this_page_item_ids = []
-        this_page_submissions = search_page_dict["images"]
-        for item_dict in this_page_submissions:
-            item_id = item_dict["id_number"]
-            this_page_item_ids.append(str(item_id))
+        this_page_item_ids= parse_tag_results_page(raw_json)
         # Test if submissions seen are duplicates
         if this_page_item_ids == last_page_items:
             logging.debug("This pages items match the last pages, stopping search.")
