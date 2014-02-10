@@ -512,7 +512,7 @@ def download_submission(settings,search_tag,submission_id):
     if not image_data:
         return
     # Image should always be bigger than this, if it isn't we got a bad file
-    if len(image_data < 100):
+    if len(image_data) < 100:
         return
     # Save image
     save_file(image_output_path, image_data, True)
