@@ -518,6 +518,7 @@ def download_submission(settings,search_tag,submission_id):
     save_file(image_output_path, image_data, True)
     # Save JSON
     save_file(json_output_path, json_page, True)
+    logging.debug("Download successful")
     return
 
 
