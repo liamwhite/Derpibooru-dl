@@ -257,6 +257,7 @@ class config_handler():
         self.download_submission_ids_list = True
         self.filename_prefix = "derpi_"
         self.resume_file_path = "config\\resume.pkl"
+        self.done_list_path = "config\\derpibooru_done_list.txt"
 
     def load_file(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -580,6 +581,7 @@ def resume_downloads(settings):
             download_submission(settings, search_tag, submission_id)
         # Clear temp file
         clear_resume_file(settings)
+        append_list(search_tag, setting.done_list_path)
         return search_tag
     else:
         return False
@@ -602,7 +604,7 @@ def process_tag(settings,search_tag):
         submission_counter += 1
         logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for tag: "+search_tag )
         download_submission(settings, search_tag, submission_id)
-    append_list(search_tag, "config\\derpibooru_done_list.txt")
+    append_list(search_tag, setting.done_list_path)
     # Clear temp data
     clear_resume_file(settings)
     return
@@ -616,7 +618,7 @@ def download_tags(settings,tag_list):
             continue
         logging.info("Now processing tag "":"+search_tag)
         process_tag(settings, search_tag)
-        append_list(search_tag, "config\\derpibooru_done_list.txt")
+        append_list(search_tag, setting.done_list_path)
 
 
 def download_submission_id_list(settings,submission_list):
@@ -627,7 +629,7 @@ def download_submission_id_list(settings,submission_list):
             continue
         logging.info("Now trying submissionID: "+submission_id)
         download_submission(settings, "from_list", submission_id)
-        append_list(submission_id, "config\\derpibooru_done_list.txt")
+        append_list(search_tag, setting.done_list_path)
 
 
 def main():
