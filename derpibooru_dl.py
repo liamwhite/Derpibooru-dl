@@ -107,6 +107,9 @@ def getwithinfo(url):
                 save_file("debug\\get_last_html.htm", reply, True)
             else:
                 save_file("debug\\get_last_not_html.txt", reply, True)
+            # Retry if empty response and not last attempt
+            if (len(reply) < 5) and (attemptcount < GET_MAX_ATTEMPTS):
+                continue
             return reply,info
         except urllib2.HTTPError, err:
             logging.debug(str(err))
