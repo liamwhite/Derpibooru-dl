@@ -426,7 +426,7 @@ def search_for_tag(settings,search_tag):
         search_page = get(tag_url)
         if not search_page:
             logging.error("No page recieved, skipping tag.")
-            return
+            return []
         # Extract submission_ids from page
         this_page_item_ids= parse_tag_results_page(search_page)
         # Test if submissions seen are duplicates
