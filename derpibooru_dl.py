@@ -613,7 +613,8 @@ def process_tag(settings,search_tag):
     # Run search for tag
     submission_ids = search_for_tag(settings, search_tag)
     #Save data for resuming
-    save_resume_file(settings,search_tag,submission_ids)
+    if len(submission_ids) > 1:
+        save_resume_file(settings,search_tag,submission_ids)
     # Download all found items
     submission_counter = 0
     for submission_id in submission_ids:
