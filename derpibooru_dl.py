@@ -672,9 +672,10 @@ def main():
     resumed_tag = resume_downloads(settings)
     if resumed_tag is not False:
         # Skip everything before and including resumed tag
-        logging.debug(str(tag_list))
+        logging.info("Skipping all items before the resumed tag: "+resumed_tag)
+        #logging.debug(str(tag_list))
         tag_list = tag_list[( tag_list.index(resumed_tag) + 1 ):]
-        logging.debug(str(tag_list))
+        #logging.debug(str(tag_list))
     # Download individual submissions
     if settings.download_submission_ids_list:
         download_submission_id_list(settings,tag_list)
