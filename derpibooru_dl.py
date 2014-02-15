@@ -627,7 +627,6 @@ def process_tag(settings,search_tag):
         submission_counter += 1
         logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for tag: "+search_tag )
         download_submission(settings, search_tag, submission_id)
-    append_list(search_tag, settings.done_list_path)
     # Clear temp data
     clear_resume_file(settings)
     return
