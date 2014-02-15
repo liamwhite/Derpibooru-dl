@@ -388,10 +388,8 @@ def search_for_query(settings,search_tag):
     return found_submissions
 
 
-def parse_tag_results_page(raw_json):
+def parse_tag_results_page(search_page_dict):
     """Convert raw JSON from a search page into a list of submissionIDs"""
-    # Convert JSON to dict
-    search_page_dict = decode_json(raw_json)
     # Extract item ids
     this_page_item_ids = []
     this_page_submissions = search_page_dict["images"]
@@ -430,8 +428,11 @@ def search_for_tag(settings,search_tag):
         if not search_page:
             logging.error("No page recieved, skipping tag.")
             return []
+
+        # Convert JSON to dict
+        search_page_dict = decode_json(search_page)
         # Extract submission_ids from page
-        this_page_item_ids= parse_tag_results_page(search_page)
+        this_page_item_ids= parse_tag_results_page(search_page_dict)
         # Test if submissions seen are duplicates
         if this_page_item_ids == last_page_items:
             logging.debug("This pages items match the last pages, stopping search.")
@@ -581,7 +582,8 @@ def save_resume_file(settings,search_tag,submission_ids):
 def clear_resume_file(settings):
     # Erase pickle
     logging.debug("Erasing resume data pickle")
-    os.remove(settings.resume_file_path)
+    if os.path.exists(settings.resume_file_path):
+        os.remove(settings.resume_file_path)
     return
 
 def resume_downloads(settings):
@@ -617,7 +619,7 @@ def process_tag(settings,search_tag):
     # Run search for tag
     submission_ids = search_for_tag(settings, search_tag)
     #Save data for resuming
-    if len(submission_ids) > 1:
+    if len(submission_ids) > 0:
         save_resume_file(settings,search_tag,submission_ids)
     # Download all found items
     submission_counter = 0
