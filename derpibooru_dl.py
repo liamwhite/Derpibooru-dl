@@ -258,9 +258,11 @@ class config_handler():
         self.output_folder = "download"
         self.download_tags_list = True
         self.download_submission_ids_list = True
-        self.filename_prefix = "derpi_"
+        # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
         self.done_list_path = "config\\derpibooru_done_list.txt"
+        self.filename_prefix = "derpi_"
+        self.sft_max_attempts = 10 # Maximum retries in search_for_tag()
 
     def load_file(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -360,7 +362,7 @@ def search_for_query(settings,search_tag):
     while page_counter <= max_pages:
         # Incriment page counter
         page_counter += 1
-        logging.debug("Scanning page "+str(page_counter)+" for tag: "+search_tag)
+        logging.debug("Scanning page "+str(page_counter)+" for query: "+search_tag)
         # Generate page URL
         search_url = "https://derpibooru.org/search.json?q="+search_tag+"&page="+str(page_counter)+"&key="+settings.api_key+"&nocomments=1&nofave=1"
         # Load page
@@ -423,16 +425,29 @@ def search_for_tag(settings,search_tag):
         logging.debug("Scanning page "+str(page_counter)+" for tag: "+search_tag)
         # Generate page URL
         tag_url = "https://derpibooru.org/tags/"+search_tag+".json?page="+str(page_counter)+"&key="+settings.api_key+"&nocomments=1&nofave=1"
-        # Load page
-        search_page = get(tag_url)
-        if not search_page:
-            logging.error("No page recieved, skipping tag.")
-            return []
-
-        # Convert JSON to dict
-        search_page_dict = decode_json(search_page)
-        # Extract submission_ids from page
-        this_page_item_ids= parse_tag_results_page(search_page_dict)
+        # Retry if error loading search page
+        attempt_counter = 0
+        while attempt_counter < settings.sft_max_attempts:
+            attempt_counter += 1
+            try:
+                # Load page
+                search_page = get(tag_url)
+                if not search_page:
+                    logging.error("No page recieved on attempt "+str(attempt_counter))
+                    continue
+                # Convert JSON to dict
+                search_page_dict = decode_json(search_page)
+                # Extract submission_ids from page
+                this_page_item_ids= parse_tag_results_page(search_page_dict)
+                break
+            except ValueError, err:
+                # Catch errors from bad json data
+                logging.error("ValueError while scanning tag listing on attempt "+str(attempt_counter))
+                logging.exception(err)
+                continue
+        if attempt_counter >= settings.sft_max_attempts:
+            logging.error("Maximum attempts reached when scanning tag! Exiting to provide notice of problem")
+            sys.exit()
         # Test if submissions seen are duplicates
         if this_page_item_ids == last_page_items:
             logging.debug("This pages items match the last pages, stopping search.")
