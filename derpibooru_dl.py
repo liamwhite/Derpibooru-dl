@@ -459,6 +459,17 @@ def search_for_tag(settings,search_tag):
     return found_submissions
 
 
+def check_if_deleted_submission(json_dict):
+    """Check whether the JSON Dict foir a submission shwo it as being deleted"""
+    try:
+        deletion_reason = json_dict["deletion_reason"]
+        logging.error("Deleted submission! Reason: "+str(deletion_reason))
+        return True
+    except KeyError:
+        return False
+
+
+
 def copy_over_if_duplicate(settings,submission_id,output_folder):
     """Check if there is already a copy of the submission downloaded in the download path.
     If there is, copy the existing version to the suppplied output location then return True
@@ -536,6 +547,10 @@ def download_submission(settings,search_tag,submission_id):
         return
     # Convert JSON to dict
     json_dict = decode_json(json_page)
+    # Check if submission is deleted
+    if check_if_deleted_submission(json_dict):
+        logging.debug(json_pags)
+        return
     # Extract needed info from JSON
     image_url = json_dict["image"]
     image_filename = json_dict["file_name"]
