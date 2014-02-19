@@ -549,7 +549,7 @@ def download_submission(settings,search_tag,submission_id):
     json_dict = decode_json(json_page)
     # Check if submission is deleted
     if check_if_deleted_submission(json_dict):
-        logging.debug(json_pags)
+        logging.debug(json_page)
         return
     # Extract needed info from JSON
     image_url = json_dict["image"]
