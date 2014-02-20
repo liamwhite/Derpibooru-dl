@@ -461,11 +461,14 @@ def search_for_tag(settings,search_tag):
 
 def check_if_deleted_submission(json_dict):
     """Check whether the JSON Dict foir a submission shwo it as being deleted"""
-    try:
-        deletion_reason = json_dict["deletion_reason"]
-        logging.error("Deleted submission! Reason: "+str(deletion_reason))
+    keys = json_dict.keys()
+    if "deletion_reason" in keys:
+        logging.error("Deleted submission! Reason: "+str(json_dict["deletion_reason"]))
         return True
-    except KeyError:
+    elif "duplicate_of" in keys:
+        logging.error("Deleted duplicate submission! Reason: "+str(json_dict["duplicate_of"]))
+        return True
+    else:
         return False
 
 
