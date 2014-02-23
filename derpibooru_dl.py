@@ -460,7 +460,7 @@ def search_for_tag(settings,search_tag):
 
 
 def check_if_deleted_submission(json_dict):
-    """Check whether the JSON Dict foir a submission shwo it as being deleted"""
+    """Check whether the JSON Dict for a submission shows it as being deleted"""
     keys = json_dict.keys()
     if "deletion_reason" in keys:
         logging.error("Deleted submission! Reason: "+str(json_dict["deletion_reason"]))
@@ -505,6 +505,11 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                 json_output_filename = submission_id+".json"
                 json_output_path = os.path.join(json_output_folder, json_output_filename)
                 submission_output_path = os.path.join(output_folder,match_filename)
+                # Redownload if a file is missing
+                if os.path.exists(glob_match):
+                    return False
+                if os.path.exists(expected_json_input_location):
+                    return False
                 # Ensure output path exists
                 if not os.path.exists(json_output_folder):
                     os.makedirs(json_output_folder)
