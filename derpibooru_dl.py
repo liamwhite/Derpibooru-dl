@@ -570,11 +570,13 @@ def download_submission(settings,search_tag,submission_id):
     image_output_path = os.path.join(output_folder,image_output_filename)
     # Load image data
     authenticated_image_url = image_url+"?key="+settings.api_key
+    logging.debug("Loading submission image: "+authenticated_image_url)
     image_data = get(authenticated_image_url)
     if not image_data:
         return
     # Image should always be bigger than this, if it isn't we got a bad file
     if len(image_data) < 100:
+        logging.error("Image data was too small! "+str(image_data))
         return
     # Save image
     save_file(image_output_path, image_data, True)
@@ -638,6 +640,10 @@ def resume_downloads(settings):
         submission_counter = 0
         for submission_id in submission_ids:
             submission_counter += 1
+            # Only save pickle every 100 items to help avoid pickle corruption
+            if (submission_counter % 100) == 0:
+                cropped_submission_ids = submission_ids[( submission_counter -1 ):]
+                save_resume_file(settings,search_tag,cropped_submission_ids)
             logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for resumed tag: "+search_tag )
             # Try downloading each submission
             download_submission(settings, search_tag, submission_id)
