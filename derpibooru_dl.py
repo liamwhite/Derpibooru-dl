@@ -507,10 +507,10 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                 submission_output_path = os.path.join(output_folder,match_filename)
                 # Redownload if a file is missing
                 if not os.path.exists(glob_match):
-                    logging.debug("Submission file is missing.")
+                    logging.debug("Submission file to copy is missing.")
                     return False
                 if not os.path.exists(expected_json_input_location):
-                    logging.debug(" JSON file is missing.")
+                    logging.debug("JSON file to copy is missing.")
                     return False
                 # Ensure output path exists
                 if not os.path.exists(json_output_folder):
