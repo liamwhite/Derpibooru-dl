@@ -640,8 +640,8 @@ def resume_downloads(settings):
         submission_counter = 0
         for submission_id in submission_ids:
             submission_counter += 1
-            # Only save pickle every 100 items to help avoid pickle corruption
-            if (submission_counter % 100) == 0:
+            # Only save pickle every 1000 items to help avoid pickle corruption
+            if (submission_counter % 1000) == 0:
                 cropped_submission_ids = submission_ids[( submission_counter -1 ):]
                 save_resume_file(settings,search_tag,cropped_submission_ids)
             logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for resumed tag: "+search_tag )
