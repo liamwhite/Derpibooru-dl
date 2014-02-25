@@ -495,6 +495,7 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                 return False
             else:
                 # Copy over submission file and metadata JSON
+                logging.info("Trying to copy from previous download...")
                 # Check output folders exist
                 # Build expected paths
                 match_dir, match_filename = os.path.split(glob_match)
