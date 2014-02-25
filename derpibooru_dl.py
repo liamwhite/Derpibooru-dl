@@ -648,6 +648,7 @@ def resume_downloads(settings):
             logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for resumed tag: "+search_tag )
             # Try downloading each submission
             download_submission(settings, search_tag, submission_id)
+            print "\n\n"
         # Clear temp file
         clear_resume_file(settings)
         append_list(search_tag, settings.done_list_path)
@@ -674,6 +675,7 @@ def process_tag(settings,search_tag):
         submission_counter += 1
         logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for tag: "+search_tag )
         download_submission(settings, search_tag, submission_id)
+        print "\n\n"
     # Clear temp data
     clear_resume_file(settings)
     return
