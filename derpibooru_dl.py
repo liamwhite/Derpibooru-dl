@@ -700,7 +700,7 @@ def download_submission_id_list(settings,submission_list):
             continue
         logging.info("Now trying submissionID: "+submission_id)
         download_submission(settings, "from_list", submission_id)
-        append_list(search_tag, settings.done_list_path)
+        append_list(submission_id, settings.done_list_path)
 
 
 def main():
