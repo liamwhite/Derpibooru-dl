@@ -10,8 +10,6 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-
-
 import time
 import os
 import sys
@@ -109,6 +107,7 @@ def getwithinfo(url):
                 save_file("debug\\get_last_not_html.txt", reply, True)
             # Retry if empty response and not last attempt
             if (len(reply) < 5) and (attemptcount < GET_MAX_ATTEMPTS):
+                logging.error("reply too short :"+str(reply))
                 continue
             return reply,info
         except urllib2.HTTPError, err:
@@ -258,6 +257,7 @@ class config_handler():
         self.output_folder = "download"
         self.download_tags_list = True
         self.download_submission_ids_list = True
+        self.output_long_filenames = False
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
         self.done_list_path = "config\\derpibooru_done_list.txt"
@@ -291,6 +291,10 @@ class config_handler():
             self.download_submission_ids_list = config.getboolean('Settings', 'download_submission_ids_list')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.output_long_filenames = config.getboolean('Settings', 'output_long_filenames')
+        except ConfigParser.NoOptionError:
+            pass
 
     def save_settings(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -301,6 +305,7 @@ class config_handler():
         config.set('Settings', 'output_folder', self.output_folder )
         config.set('Settings', 'download_tags_list', str(self.download_tags_list) )
         config.set('Settings', 'download_submission_ids_list', str(self.download_submission_ids_list) )
+        config.set('Settings', 'output_long_filenames', str(self.output_long_filenames) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
 
@@ -324,13 +329,13 @@ def decode_json(json_string):
         raise(err)
 
 
-
 def read_file(path):
     """grab the contents of a file"""
     f = open(path, "r")
     data = f.read()
     f.close()
     return data
+
 
 def setup_browser():
     #Initialize browser object to global variable "br" using cokie jar "cj"
@@ -472,7 +477,6 @@ def check_if_deleted_submission(json_dict):
         return False
 
 
-
 def copy_over_if_duplicate(settings,submission_id,output_folder):
     """Check if there is already a copy of the submission downloaded in the download path.
     If there is, copy the existing version to the suppplied output location then return True
@@ -567,7 +571,10 @@ def download_submission(settings,search_tag,submission_id):
     image_filename = json_dict["file_name"]
     image_file_ext = json_dict["original_format"]
     # Build image output filenames
-    image_output_filename = settings.filename_prefix+submission_id+"."+image_file_ext
+    if settings.output_long_filenames:
+        image_output_filename = settings.filename_prefix+image_filename+"."+image_file_ext
+    else:
+        image_output_filename = settings.filename_prefix+submission_id+"."+image_file_ext
     image_output_path = os.path.join(output_folder,image_output_filename)
     # Load image data
     authenticated_image_url = image_url+"?key="+settings.api_key
@@ -585,9 +592,6 @@ def download_submission(settings,search_tag,submission_id):
     save_file(json_output_path, json_page, True)
     logging.debug("Download successful")
     return
-
-
-
 
 
 def read_pickle(file_path):
@@ -610,6 +614,7 @@ def save_pickle(path,data):
     pf.close()
     return
 
+
 def save_resume_file(settings,search_tag,submission_ids):
     # Save submissionIDs and search_tag to pickle
     logging.debug("Saving resume data pickle")
@@ -622,12 +627,14 @@ def save_resume_file(settings,search_tag,submission_ids):
     save_pickle(settings.resume_file_path, resume_dict)
     return
 
+
 def clear_resume_file(settings):
     # Erase pickle
     logging.debug("Erasing resume data pickle")
     if os.path.exists(settings.resume_file_path):
         os.remove(settings.resume_file_path)
     return
+
 
 def resume_downloads(settings):
     # Look for pickle of submissions to iterate over
@@ -655,9 +662,6 @@ def resume_downloads(settings):
         return search_tag
     else:
         return False
-
-
-
 
 
 def process_tag(settings,search_tag):
@@ -732,7 +736,6 @@ def main():
     # Process each submission_id on tag list
     if settings.download_tags_list:
         download_tags(settings,tag_list)
-
 
 
 if __name__ == '__main__':
