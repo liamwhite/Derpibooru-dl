@@ -92,7 +92,7 @@ def getwithinfo(url):
         if attemptcount > 1:
             logging.debug( "Attempt " + str(attemptcount) )
         try:
-            save_file("debug\\get_last_utl.txt", url, True)
+            save_file("debug\\get_last_url.txt", url, True)
             r = br.open(url)
             info = r.info()
             reply = r.read()
@@ -395,6 +395,22 @@ def search_for_query(settings,search_tag):
     return found_submissions
 
 
+
+def detect_redirect_page(html):
+    """Detect tag redirect notice.
+    If tag is a redirect return the aliased tag. Else return False"""
+    if """) has been aliased to the tag""" in html:
+        # find aliased tag
+        # flash notice">This tag (&#39;yawning&#39;) has been aliased to the tag &#39;yawn&#39;</div><div id="content"
+        redirect_tag_search_regex = """\)\s+?has\s+?been\s+?aliased\s+?to\s+?the\s+?tag\s+?&\#39;([^&]+)&\#39;</div>"""
+        redirect_tag_search = re.search(redirect_tag_search_regex, html)
+        if redirect_tag_search:
+            return redirect_tag_search.group(1)
+        return True
+    else:
+        return False
+
+
 def parse_tag_results_page(search_page_dict):
     """Convert raw JSON from a search page into a list of submissionIDs"""
     # Extract item ids
@@ -440,6 +456,11 @@ def search_for_tag(settings,search_tag):
                 if not search_page:
                     logging.error("No page recieved on attempt "+str(attempt_counter))
                     continue
+                # process aliased tag if tag is a redirect
+                redirect_tag = detect_redirect_page(search_page)
+                if redirect_tag:
+                    logging.info("Tag was an alias, processing aliased tag instead")
+                    return search_for_tag(settings, redirect_tag)
                 # Convert JSON to dict
                 search_page_dict = decode_json(search_page)
                 # Extract submission_ids from page
