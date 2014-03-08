@@ -90,7 +90,7 @@ def getwithinfo(url):
     while attemptcount < GET_MAX_ATTEMPTS:
         attemptcount = attemptcount + 1
         if attemptcount > 1:
-            logging.debug( "Attempt " + str(attemptcount) )
+            logging.debug( "Attempt " + str(attemptcount) + " for URL: " + url )
         try:
             save_file("debug\\get_last_url.txt", url, True)
             r = br.open(url)
@@ -405,8 +405,14 @@ def detect_redirect_page(html):
         redirect_tag_search_regex = """\)\s+?has\s+?been\s+?aliased\s+?to\s+?the\s+?tag\s+?&\#39;([^&]+)&\#39;</div>"""
         redirect_tag_search = re.search(redirect_tag_search_regex, html)
         if redirect_tag_search:
-            return redirect_tag_search.group(1)
-        return True
+            raw_tag = redirect_tag_search.group(1)
+            # fix for colon not being derpiboorus preferred -colon- e.g. tags/artist:kabutoro
+            if ":" in raw_tag:
+                tag = raw_tag.replace(":", "-colon-")
+                return tag
+            else:
+                return raw_tag
+
     else:
         return False
 
