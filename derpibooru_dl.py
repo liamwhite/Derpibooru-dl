@@ -106,7 +106,7 @@ def getwithinfo(url):
             else:
                 save_file("debug\\get_last_not_html.txt", reply, True)
             # Retry if empty response and not last attempt
-            if (len(reply) < 5) and (attemptcount < GET_MAX_ATTEMPTS):
+            if (len(reply) < 1) and (attemptcount < GET_MAX_ATTEMPTS):
                 logging.error("reply too short :"+str(reply))
                 continue
             return reply,info
@@ -255,8 +255,9 @@ class config_handler():
         # Download Settings
         self.reverse = False
         self.output_folder = "download"
-        self.download_tags_list = True
+        self.download_tags_list = False
         self.download_submission_ids_list = True
+        self.download_query_list = True
         self.output_long_filenames = False
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
@@ -292,6 +293,10 @@ class config_handler():
         except ConfigParser.NoOptionError:
             pass
         try:
+            self.download_query_list = config.getboolean('Settings', 'download_query_list')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
             self.output_long_filenames = config.getboolean('Settings', 'output_long_filenames')
         except ConfigParser.NoOptionError:
             pass
@@ -305,6 +310,7 @@ class config_handler():
         config.set('Settings', 'output_folder', self.output_folder )
         config.set('Settings', 'download_tags_list', str(self.download_tags_list) )
         config.set('Settings', 'download_submission_ids_list', str(self.download_submission_ids_list) )
+        config.set('Settings', 'download_query_list', str(self.download_query_list) )
         config.set('Settings', 'output_long_filenames', str(self.output_long_filenames) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
@@ -374,11 +380,11 @@ def search_for_query(settings,search_tag):
         search_page = get(search_url)
         if search_page is None:
             break
-        print search_page
+        #print search_page
         # Extract submission_ids from page
         # Convert JSON to dict
         search_page_list = decode_json(search_page)
-        print search_page_list
+        #print search_page_list
         # Extract item ids
         this_page_item_ids = []
         for item_dict in search_page_list:
@@ -713,6 +719,7 @@ def process_tag(settings,search_tag):
 
 
 def download_tags(settings,tag_list):
+    # API for this is depricated!
     for search_tag in tag_list:
         # remove invalid items
         if not re.search("[^\d]",search_tag):
@@ -721,6 +728,36 @@ def download_tags(settings,tag_list):
         logging.info("Now processing tag "":"+search_tag)
         process_tag(settings, search_tag)
         append_list(search_tag, settings.done_list_path)
+
+
+def process_query(settings,search_query):
+    """Download submissions for a tag on derpibooru"""
+    assert_is_string(search_query)
+    #logging.info("Processing tag: "+search_query)
+    # Run search for query
+    submission_ids = search_for_query(settings, search_query)
+    # Save data for resuming
+    if len(submission_ids) > 0:
+        save_resume_file(settings,search_query,submission_ids)
+    # Download all found items
+    submission_counter = 0
+    for submission_id in submission_ids:
+        submission_counter += 1
+        logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for query: "+search_query )
+        download_submission(settings, search_query, submission_id)
+        print "\n\n"
+    # Clear temp data
+    clear_resume_file(settings)
+    return
+
+
+def download_query_list(settings,query_list):
+    counter = 0
+    for search_query in query_list:
+        counter += 1
+        logging.info("Now proccessing query "+str(counter)+" of "+str(len(query_list))+": "+search_query)
+        process_query(settings,search_query)
+        append_list(search_query, settings.done_list_path)
 
 
 def download_submission_id_list(settings,submission_list):
@@ -763,6 +800,9 @@ def main():
     # Process each submission_id on tag list
     if settings.download_tags_list:
         download_tags(settings,tag_list)
+    # Process each search query
+    if settings.download_query_list:
+        download_query_list(settings,tag_list)
 
 
 if __name__ == '__main__':

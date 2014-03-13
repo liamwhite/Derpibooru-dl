@@ -15,3 +15,5 @@ T4g 4
 
 Run derpibooru_dl.py again to download the tags you set.
 After a tag has been processed, it will be written to the file config\derpibooru_done_list.txt
+
+The API used for the tag mode is depricated, use search mode instead. It should behave the same.
