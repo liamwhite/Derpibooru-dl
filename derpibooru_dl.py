@@ -93,7 +93,7 @@ def getwithinfo(url):
             logging.debug( "Attempt " + str(attemptcount) + " for URL: " + url )
         try:
             save_file("debug\\get_last_url.txt", url, True)
-            r = br.open(url)
+            r = br.open(url, timeout=100)
             info = r.info()
             reply = r.read()
             delay(GET_REQUEST_DELAY)
@@ -418,7 +418,6 @@ def detect_redirect_page(html):
                 return tag
             else:
                 return raw_tag
-
     else:
         return False
 
@@ -678,23 +677,28 @@ def resume_downloads(settings):
         search_tag = resume_dict["search_tag"]
         submission_ids = resume_dict["submission_ids"]
         # Iterate over submissions
-        submission_counter = 0
-        for submission_id in submission_ids:
-            submission_counter += 1
-            # Only save pickle every 1000 items to help avoid pickle corruption
-            if (submission_counter % 1000) == 0:
-                cropped_submission_ids = submission_ids[( submission_counter -1 ):]
-                save_resume_file(settings,search_tag,cropped_submission_ids)
-            logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for resumed tag: "+search_tag )
-            # Try downloading each submission
-            download_submission(settings, search_tag, submission_id)
-            print "\n\n"
+        download_submission_id_list(settings,submission_ids,search_tag)
         # Clear temp file
         clear_resume_file(settings)
         append_list(search_tag, settings.done_list_path)
         return search_tag
     else:
         return False
+
+
+def download_submission_id_list(settings,submission_ids,query):
+    # Iterate over submissions
+    submission_counter = 0
+    for submission_id in submission_ids:
+        submission_counter += 1
+        # Only save pickle every 1000 items to help avoid pickle corruption
+        if (submission_counter % 1000) == 0:
+            cropped_submission_ids = submission_ids[( submission_counter -1 ):]
+            save_resume_file(settings,query,cropped_submission_ids)
+        logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for: "+query )
+        # Try downloading each submission
+        download_submission(settings, query, submission_id)
+        print "\n\n"
 
 
 def process_tag(settings,search_tag):
@@ -707,12 +711,7 @@ def process_tag(settings,search_tag):
     if len(submission_ids) > 0:
         save_resume_file(settings,search_tag,submission_ids)
     # Download all found items
-    submission_counter = 0
-    for submission_id in submission_ids:
-        submission_counter += 1
-        logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for tag: "+search_tag )
-        download_submission(settings, search_tag, submission_id)
-        print "\n\n"
+    download_submission_id_list(settings,submission_ids,search_tag)
     # Clear temp data
     clear_resume_file(settings)
     return
@@ -740,12 +739,7 @@ def process_query(settings,search_query):
     if len(submission_ids) > 0:
         save_resume_file(settings,search_query,submission_ids)
     # Download all found items
-    submission_counter = 0
-    for submission_id in submission_ids:
-        submission_counter += 1
-        logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for query: "+search_query )
-        download_submission(settings, search_query, submission_id)
-        print "\n\n"
+    download_submission_id_list(settings,submission_ids,search_query)
     # Clear temp data
     clear_resume_file(settings)
     return
@@ -759,16 +753,6 @@ def download_query_list(settings,query_list):
         process_query(settings,search_query)
         append_list(search_query, settings.done_list_path)
 
-
-def download_submission_id_list(settings,submission_list):
-    for submission_id in submission_list:
-        # remove invalid items
-        if re.search("[^\d]",submission_id):
-            logging.debug("Not a submissionid")
-            continue
-        logging.info("Now trying submissionID: "+submission_id)
-        download_submission(settings, "from_list", submission_id)
-        append_list(submission_id, settings.done_list_path)
 
 
 def main():
@@ -796,7 +780,7 @@ def main():
         #logging.debug(str(tag_list))
     # Download individual submissions
     if settings.download_submission_ids_list:
-        download_submission_id_list(settings,tag_list)
+        download_submission_id_list(settings,tag_list,"from_list")
     # Process each submission_id on tag list
     if settings.download_tags_list:
         download_tags(settings,tag_list)
