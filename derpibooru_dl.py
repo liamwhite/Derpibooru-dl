@@ -60,6 +60,20 @@ def setup_logging(log_file_path):
     # End logging setup
 
 
+def add_http(url):
+    """Ensure a url starts with http://..."""
+    if "http://" in url:
+        return url
+    else:
+        #case //derpicdn.net/img/view/...
+        if url[0:1] == "//":
+            return "http:"+url
+        else:
+            raise ValueError
+
+
+
+
 def deescape(html):
     # de-escape html
     # http://stackoverflow.com/questions/2360598/how-do-i-unescape-html-entities-in-a-string-in-python-3-1
@@ -74,7 +88,8 @@ def get(url):
     #if html:
     assert_is_string(url)
     deescaped_url = deescape(url)
-    gettuple = getwithinfo(deescaped_url)
+    url_with_protocol = add_http(deescaped_url)
+    gettuple = getwithinfo(url_with_protocol)
     if gettuple:
         reply, info = gettuple
         return reply
