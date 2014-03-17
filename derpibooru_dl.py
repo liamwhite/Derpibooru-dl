@@ -64,11 +64,15 @@ def add_http(url):
     """Ensure a url starts with http://..."""
     if "http://" in url:
         return url
+    elif "https://" in url:
+        return url
     else:
         #case //derpicdn.net/img/view/...
-        if url[0:1] == "//":
+        first_two_chars = url[0:1]
+        if first_two_chars == "//":
             return "http:"+url
         else:
+            logging.error(url)
             raise ValueError
 
 
