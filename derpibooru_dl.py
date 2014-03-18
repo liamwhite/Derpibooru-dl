@@ -68,9 +68,12 @@ def add_http(url):
         return url
     else:
         #case //derpicdn.net/img/view/...
-        first_two_chars = url[0:1]
+        first_two_chars = url[0:2]
+        print first_two_chars
         if first_two_chars == "//":
-            return "http:"+url
+            output_url = "http:"+url
+            print output_url
+            return output_url
         else:
             logging.error(url)
             raise ValueError
@@ -153,6 +156,10 @@ def getwithinfo(url):
             logging.debug(str(err))
             continue
         except mechanize.BrowserStateError, err:
+            logging.debug(str(err))
+            continue
+        except socket.timeout, err:
+            logger.debug(str( type(err) ) )
             logging.debug(str(err))
             continue
         delay(GET_RETRY_DELAY)
@@ -748,6 +755,23 @@ def download_tags(settings,tag_list):
         append_list(search_tag, settings.done_list_path)
 
 
+def download_ids(settings,query_list,folder):
+    # API for this is depricated!
+    submission_ids = []
+    for query in query_list:
+        # remove invalid items
+        if re.search("[^\d]",query):
+            logging.debug("Not a submissionID! skipping.")
+            continue
+        else:
+            submission_ids.append(query)
+    download_submission_id_list(settings,submission_ids,folder)
+
+
+
+
+
+
 def process_query(settings,search_query):
     """Download submissions for a tag on derpibooru"""
     assert_is_string(search_query)
@@ -799,7 +823,7 @@ def main():
         #logging.debug(str(tag_list))
     # Download individual submissions
     if settings.download_submission_ids_list:
-        download_submission_id_list(settings,tag_list,"from_list")
+        download_ids(settings,tag_list,"from_list")
     # Process each submission_id on tag list
     if settings.download_tags_list:
         download_tags(settings,tag_list)
@@ -818,6 +842,7 @@ if __name__ == '__main__':
     except Exception, e:
         # Log exceptions
         logger.critical("Unhandled exception!")
+        logger.critical(str( type(err) ) )
         logging.exception(e)
     logging.info( "Program finished.")
     #raw_input("Press return to close")
