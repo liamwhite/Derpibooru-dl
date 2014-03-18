@@ -69,13 +69,11 @@ def add_http(url):
     else:
         #case //derpicdn.net/img/view/...
         first_two_chars = url[0:2]
-        print first_two_chars
         if first_two_chars == "//":
             output_url = "http:"+url
-            print output_url
             return output_url
         else:
-            logging.error(url)
+            logging.error(str(locals()))
             raise ValueError
 
 
