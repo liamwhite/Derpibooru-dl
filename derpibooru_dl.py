@@ -839,10 +839,10 @@ if __name__ == '__main__':
         cj = cookielib.LWPCookieJar()
         setup_browser()
         main()
-    except Exception, e:
+    except Exception, err:
         # Log exceptions
         logger.critical("Unhandled exception!")
         logger.critical(str( type(err) ) )
-        logging.exception(e)
+        logging.exception(err)
     logging.info( "Program finished.")
     #raw_input("Press return to close")
