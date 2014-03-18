@@ -26,7 +26,7 @@ import HTMLParser
 import json
 import shutil
 import pickle
-
+import socket
 
 # getwithinfo()
 GET_REQUEST_DELAY = 0
