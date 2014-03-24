@@ -817,9 +817,8 @@ def process_query(settings,search_query):
 
 def download_query_list(settings,query_list):
     counter = 0
-    for raw_search_query in query_list:
+    for search_query in query_list:
         counter += 1
-        search_query = convert_tag_string_to_search_string(settings, raw_search_query)
         logging.info("Now proccessing query "+str(counter)+" of "+str(len(query_list))+": "+search_query)
         process_query(settings,search_query)
         append_list(search_query, settings.done_list_path)
@@ -829,6 +828,14 @@ def convert_tag_string_to_search_string(settings,query):
     """Fix a tag string for use as a search query string"""
     colons_fixed = query.replace("-colon-",":")
     return colons_fixed
+
+def convert_tag_list_to_search_string_list(settings,query_list):
+    """Convert a whole list of queries to the new search format"""
+    processed_queries = []
+    for raw_query in query_list:
+        processed_query = convert_tag_string_to_search_string(settings,raw_query)
+        processed_queries.append(processed_query)
+    return processed_queries
 
 
 def convert_query_for_path(settings,query):
@@ -843,7 +850,9 @@ def main():
     if len(settings.api_key) < 5:
         logging.warning("No API key set, weird things may happen.")
     # Load tag list
-    input_list = import_list(settings.input_list_path)
+    raw_input_list = import_list(settings.input_list_path)
+    #fix input list
+    input_list = convert_tag_list_to_search_string_list(settings,raw_input_list)
     #submission_list = import_list("config\\derpibooru_dl_submission_id_list.txt")
     # DEBUG
     #download_submission(settings,"DEBUG","263139")
