@@ -407,8 +407,8 @@ def load_search_page(settings,search_url):
         if search_page is None:
             break
         #print search_page
-        if len(search_page) < 10:
-            logging.warning("Search page is very small!")
+        if len(search_page) < 5:
+            logging.debug("Search page is very small!")
             logging.debug( locals() )
         # Extract submission_ids from page
         # Convert JSON to dict
