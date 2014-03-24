@@ -288,6 +288,7 @@ class config_handler():
         self.done_list_path = "config\\derpibooru_done_list.txt"
         self.filename_prefix = "derpi_"
         self.sft_max_attempts = 10 # Maximum retries in search_for_tag()
+        self.max_search_page_retries = 10 # maximum retries for a search page
 
     def load_file(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -385,21 +386,10 @@ def setup_browser():
     br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
 
 
-def search_for_query(settings,search_tag):
-    """Perform search for a query on derpibooru.
-    Return a lost of found submission IDs"""
-    assert_is_string(search_tag)
-    logging.debug("Starting search for tag: "+search_tag)
-    page_counter = 0 # Init counter
-    max_pages = 5000 # Saftey limit
-    found_submissions = []
-    last_page_items = []
-    while page_counter <= max_pages:
-        # Incriment page counter
-        page_counter += 1
-        logging.debug("Scanning page "+str(page_counter)+" for query: "+search_tag)
-        # Generate page URL
-        search_url = "https://derpibooru.org/search.json?q="+search_tag+"&page="+str(page_counter)+"&key="+settings.api_key+"&nocomments=1&nofave=1"
+def load_search_page(settings,search_url):
+    attempt_counter = 0
+    while attempt_counter <= settings.max_search_page_retries:
+        attempt_counter += 1
         # Load page
         search_page = get(search_url)
         if search_page is None:
@@ -407,13 +397,40 @@ def search_for_query(settings,search_tag):
         #print search_page
         # Extract submission_ids from page
         # Convert JSON to dict
-        search_page_list = decode_json(search_page)
+        assert_is_string(search_page)
+        try:
+            search_page_list = json.loads(search_page)
+        except ValueError, err:
+            loggin.error("Failed to read JSON on attempt "+str(sttempt_counter)+"for url"+search_url)
+            logging.error( locals() )
+            continue
+        assert( type( search_page_list ) == type( [] ) )# This should be a list
         #print search_page_list
         # Extract item ids
         this_page_item_ids = []
         for item_dict in search_page_list:
             item_id = item_dict["id_number"]
             this_page_item_ids.append(str(item_id))
+        return this_page_item_ids
+    logging.error("Too many failed retries, failing.")
+
+def search_for_query(settings,search_query):
+    """Perform search for a query on derpibooru.
+    Return a lost of found submission IDs"""
+    assert_is_string(search_query)
+    logging.debug("Starting search for tag: "+search_query)
+    page_counter = 0 # Init counter
+    max_pages = 5000 # Saftey limit
+    found_submissions = []
+    last_page_items = []
+    while page_counter <= max_pages:
+        # Incriment page counter
+        page_counter += 1
+        logging.debug("Scanning page "+str(page_counter)+" for query: "+search_query)
+        # Generate page URL
+        search_url = "https://derpibooru.org/search.json?q="+search_query+"&page="+str(page_counter)+"&key="+settings.api_key+"&nocomments=1&nofave=1"
+        # Load and process page
+        this_page_item_ids = load_search_page(settings,search_url)
         # Test if submissions seen are duplicates
         if this_page_item_ids == last_page_items:
             logging.debug("This pages items match the last pages, stopping search.")
