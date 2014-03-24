@@ -142,7 +142,7 @@ def getwithinfo(url):
                 logging.debug("410 error, GONE")
                 return
             else:
-                save_file("debug\\error.htm", err.fp.read(), True)
+                save_file("debug\\HTTPError.htm", err.fp.read(), True)
                 continue
         except urllib2.URLError, err:
             logging.debug(str(err))
@@ -283,12 +283,14 @@ class config_handler():
         self.download_submission_ids_list = True
         self.download_query_list = True
         self.output_long_filenames = False
+        self.input_list_path = "config\\derpibooru_dl_tag_list.txt"
+        self.done_list_path = "config\\derpibooru_done_list.txt"
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
-        self.done_list_path = "config\\derpibooru_done_list.txt"
         self.filename_prefix = "derpi_"
         self.sft_max_attempts = 10 # Maximum retries in search_for_tag()
         self.max_search_page_retries = 10 # maximum retries for a search page
+
 
     def load_file(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -325,6 +327,14 @@ class config_handler():
             self.output_long_filenames = config.getboolean('Settings', 'output_long_filenames')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.input_list_path = config.get('Settings', 'input_list_path')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.done_list_path = config.get('Settings', 'done_list_path')
+        except ConfigParser.NoOptionError:
+            pass
 
     def save_settings(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -337,6 +347,8 @@ class config_handler():
         config.set('Settings', 'download_submission_ids_list', str(self.download_submission_ids_list) )
         config.set('Settings', 'download_query_list', str(self.download_query_list) )
         config.set('Settings', 'output_long_filenames', str(self.output_long_filenames) )
+        config.set('Settings', 'input_list_path', self.input_list_path )
+        config.set('Settings', 'done_list_path', self.done_list_path )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
 
@@ -395,6 +407,9 @@ def load_search_page(settings,search_url):
         if search_page is None:
             break
         #print search_page
+        if len(search_page) < 10:
+            logging.warning("Search page is very small!")
+            logging.debug( locals() )
         # Extract submission_ids from page
         # Convert JSON to dict
         assert_is_string(search_page)
@@ -412,7 +427,7 @@ def load_search_page(settings,search_url):
             item_id = item_dict["id_number"]
             this_page_item_ids.append(str(item_id))
         return this_page_item_ids
-    logging.error("Too many failed retries, failing.")
+    logging.error("Too many failed retries loading search page, failing.")
 
 def search_for_query(settings,search_query):
     """Perform search for a query on derpibooru.
@@ -819,7 +834,7 @@ def main():
     if len(settings.api_key) < 5:
         logging.warning("No API key set, weird things may happen.")
     # Load tag list
-    tag_list = import_list("config\\derpibooru_dl_tag_list.txt")
+    input_list = import_list(settings.input_list_path)
     #submission_list = import_list("config\\derpibooru_dl_submission_id_list.txt")
     # DEBUG
     #download_submission(settings,"DEBUG","263139")
@@ -829,22 +844,23 @@ def main():
     #return
     # /DEBUG
     # Handle resuming
-    resumed_tag = resume_downloads(settings)
-    if resumed_tag is not False:
+    resumed_query = resume_downloads(settings)
+    if resumed_query is not False:
         # Skip everything before and including resumed tag
-        logging.info("Skipping all items before the resumed tag: "+resumed_tag)
+        logging.info("Skipping all items before the resumed tag: "+resumed_query)
         #logging.debug(str(tag_list))
-        tag_list = tag_list[( tag_list.index(resumed_tag) + 1 ):]
-        #logging.debug(str(tag_list))
+        input_list = input_list[( input_list.index(resumed_query) + 1 ):]
+        #logging.debug(str(input_list))
     # Download individual submissions
     if settings.download_submission_ids_list:
-        download_ids(settings,tag_list,"from_list")
+        download_ids(settings,input_list,"from_list")
     # Process each submission_id on tag list
     if settings.download_tags_list:
-        download_tags(settings,tag_list)
+        download_tags(settings,input_list)
     # Process each search query
     if settings.download_query_list:
-        download_query_list(settings,tag_list)
+        download_query_list(settings,input_list)
+    return
 
 
 if __name__ == '__main__':
