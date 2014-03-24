@@ -18,7 +18,7 @@ def artists_at_top(query_list):
     put_at_top = []
     put_at_bottom = []
     for query in query_list:
-        if "artist".lower in query.lower():
+        if "artist".lower() in query.lower():
             put_at_top.append(query)
         else:
             put_at_bottom.append(query)
