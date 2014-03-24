@@ -624,22 +624,23 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                     return False
 
 
-def download_submission(settings,search_tag,submission_id):
+def download_submission(settings,search_query,submission_id):
     """Download a submission from Derpibooru"""
-    assert_is_string(search_tag)
+    assert_is_string(search_query)
     assert_is_string(submission_id)
     setup_browser()
+    query_for_filename = convert_query_for_path(settings,search_query)
     #logging.debug("Downloading submission:"+submission_id)
     # Build JSON paths
     json_output_filename = submission_id+".json"
-    json_output_path = os.path.join(settings.output_folder,search_tag,"json",json_output_filename)
+    json_output_path = os.path.join(settings.output_folder,query_for_filename,"json",json_output_filename)
     # Check if download can be skipped
     # Check if JSON exists
     if os.path.exists(json_output_path):
         logging.debug("JSON for this submission already exists, skipping.")
         return
     # Check for dupliactes in download folder
-    output_folder = os.path.join(settings.output_folder,search_tag)
+    output_folder = os.path.join(settings.output_folder,query_for_filename)
     if copy_over_if_duplicate(settings, submission_id, output_folder):
         return
     # Build JSON URL
@@ -798,10 +799,6 @@ def download_ids(settings,query_list,folder):
     download_submission_id_list(settings,submission_ids,folder)
 
 
-
-
-
-
 def process_query(settings,search_query):
     """Download submissions for a tag on derpibooru"""
     assert_is_string(search_query)
@@ -820,12 +817,24 @@ def process_query(settings,search_query):
 
 def download_query_list(settings,query_list):
     counter = 0
-    for search_query in query_list:
+    for raw_search_query in query_list:
         counter += 1
+        search_query = convert_tag_string_to_search_string(settings, raw_search_query)
         logging.info("Now proccessing query "+str(counter)+" of "+str(len(query_list))+": "+search_query)
         process_query(settings,search_query)
         append_list(search_query, settings.done_list_path)
 
+
+def convert_tag_string_to_search_string(settings,query):
+    """Fix a tag string for use as a search query string"""
+    colons_fixed = query.replace("-colon-",":")
+    return colons_fixed
+
+
+def convert_query_for_path(settings,query):
+    """Convert a query to the old style -colon- format for filenames"""
+    colons_fixed = query.replace(":", "-colon-")
+    return colons_fixed
 
 
 def main():
