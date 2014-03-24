@@ -31,7 +31,7 @@ def main():
     output_list_path = "config\\artists_at_top.txt"
     input_list = derpibooru_dl.import_list(input_list_path)
     artists_at_top_list = artists_at_top(input_list)
-    derpibooru_dl.append_list(artists_at_top_list, output_list_path)
+    derpibooru_dl.append_list(artists_at_top_list, output_list_path, initial_text="# Artists at the top.\n",overwrite=True)
 
 if __name__ == '__main__':
     main()

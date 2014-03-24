@@ -242,14 +242,14 @@ def import_list(listfilename="ERROR.txt"):
         return []
 
 
-def append_list(lines,list_file_path="weasyl_done_list.txt",initial_text="# List of completed items.\n"):
+def append_list(lines,list_file_path="weasyl_done_list.txt",initial_text="# List of completed items.\n",overwrite=False):
     # Append a string or list of strings to a file; If no file exists, create it and append to the new file.
     # Strings will be seperated by newlines.
     # Make sure we're saving a list of strings.
     if ((type(lines) is type(""))or (type(lines) is type(u""))):
         lines = [lines]
-    # Ensure file exists.
-    if not os.path.exists(list_file_path):
+    # Ensure file exists and erase if needed
+    if (not os.path.exists(list_file_path)) or (overwrite is True):
         list_file_segments = os.path.split(list_file_path)
         list_dir = list_file_segments[0]
         if list_dir:
