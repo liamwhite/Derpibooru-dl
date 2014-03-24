@@ -28,6 +28,9 @@ import shutil
 import pickle
 import socket
 
+
+
+
 # getwithinfo()
 GET_REQUEST_DELAY = 0
 GET_RETRY_DELAY = 30
@@ -75,8 +78,6 @@ def add_http(url):
         else:
             logging.error(str(locals()))
             raise ValueError
-
-
 
 
 def deescape(html):
@@ -429,6 +430,7 @@ def load_search_page(settings,search_url):
         return this_page_item_ids
     logging.error("Too many failed retries loading search page, failing.")
 
+
 def search_for_query(settings,search_query):
     """Perform search for a query on derpibooru.
     Return a lost of found submission IDs"""
@@ -455,7 +457,6 @@ def search_for_query(settings,search_query):
         found_submissions += this_page_item_ids
     # Return found items
     return found_submissions
-
 
 
 def detect_redirect_page(html):
