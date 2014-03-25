@@ -60,7 +60,7 @@ def setup_logging(log_file_path):
     ch.setFormatter(formatter)
     logger.addHandler(ch)
     logging.debug('Logging started.')
-    # End logging setup
+    return
 
 
 def add_http(url):
@@ -162,6 +162,7 @@ def getwithinfo(url):
             logging.debug(str(err))
             continue
         delay(GET_RETRY_DELAY)
+    return
 
 
 def save_file(filenamein,data,force_save=False):
@@ -177,6 +178,7 @@ def save_file(filenamein,data,force_save=False):
     file = open(sanitizedpath, "wb")
     file.write(data)
     file.close()
+    return
 
 
 def delay(basetime,upperrandom=0):
@@ -273,6 +275,7 @@ class config_handler():
         self.set_defaults()
         self.load_file(settings_path)
         self.save_settings(settings_path)
+        return
 
     def set_defaults(self):
         # Login
@@ -286,11 +289,13 @@ class config_handler():
         self.output_long_filenames = False
         self.input_list_path = "config\\derpibooru_dl_tag_list.txt"
         self.done_list_path = "config\\derpibooru_done_list.txt"
+        self.failed_list_path = "config\\derpibooru_failed_list.txt"
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
         self.filename_prefix = "derpi_"
         self.sft_max_attempts = 10 # Maximum retries in search_for_tag()
         self.max_search_page_retries = 10 # maximum retries for a search page
+        return
 
 
     def load_file(self,settings_path):
@@ -336,6 +341,11 @@ class config_handler():
             self.done_list_path = config.get('Settings', 'done_list_path')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.failed_list_path = config.get('Settings', 'failed_list_path')
+        except ConfigParser.NoOptionError:
+            pass
+        return
 
     def save_settings(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -350,8 +360,10 @@ class config_handler():
         config.set('Settings', 'output_long_filenames', str(self.output_long_filenames) )
         config.set('Settings', 'input_list_path', self.input_list_path )
         config.set('Settings', 'done_list_path', self.done_list_path )
+        config.set('Settings', 'failed_list_path', self.failed_list_path )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
+        return
 
 
 def assert_is_string(object_to_test):
@@ -397,6 +409,7 @@ def setup_browser():
     br.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
     # User-Agent (this is cheating, ok?)
     br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
+    return
 
 
 def load_search_page(settings,search_url):
@@ -429,6 +442,7 @@ def load_search_page(settings,search_url):
             this_page_item_ids.append(str(item_id))
         return this_page_item_ids
     logging.error("Too many failed retries loading search page, failing.")
+    return
 
 
 def search_for_query(settings,search_query):
@@ -747,6 +761,10 @@ def resume_downloads(settings):
 def download_submission_id_list(settings,submission_ids,query):
     # Iterate over submissions
     submission_counter = 0
+    # If no submissions to save record failure
+    if len(submission_ids) == 0:
+        logging.warning("No submissions to save! Query:"+str(query))
+        append_list(query, settings.failed_list_path, initial_text="# List of failed items.\n")
     for submission_id in submission_ids:
         submission_counter += 1
         # Only save pickle every 1000 items to help avoid pickle corruption
@@ -757,6 +775,7 @@ def download_submission_id_list(settings,submission_ids,query):
         # Try downloading each submission
         download_submission(settings, query, submission_id)
         print "\n\n"
+    return
 
 
 def process_tag(settings,search_tag):
@@ -785,6 +804,7 @@ def download_tags(settings,tag_list):
         logging.info("Now processing tag "":"+search_tag)
         process_tag(settings, search_tag)
         append_list(search_tag, settings.done_list_path)
+    return
 
 
 def download_ids(settings,query_list,folder):
@@ -798,6 +818,7 @@ def download_ids(settings,query_list,folder):
         else:
             submission_ids.append(query)
     download_submission_id_list(settings,submission_ids,folder)
+    return
 
 
 def process_query(settings,search_query):
@@ -823,6 +844,7 @@ def download_query_list(settings,query_list):
         logging.info("Now proccessing query "+str(counter)+" of "+str(len(query_list))+": "+search_query)
         process_query(settings,search_query)
         append_list(search_query, settings.done_list_path)
+    return
 
 
 def convert_tag_string_to_search_string(settings,query):
