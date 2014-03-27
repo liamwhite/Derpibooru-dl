@@ -282,19 +282,21 @@ class config_handler():
         self.api_key = ""
         # Download Settings
         self.reverse = False
-        self.output_folder = "download"
+        self.output_folder = "download"# Root path to download to
         self.download_tags_list = False
         self.download_submission_ids_list = True
         self.download_query_list = True
-        self.output_long_filenames = False
+        self.output_long_filenames = False # Should we use the derpibooru supplied filename with the tags? !UNSUPPORTED!
         self.input_list_path = "config\\derpibooru_dl_tag_list.txt"
         self.done_list_path = "config\\derpibooru_done_list.txt"
         self.failed_list_path = "config\\derpibooru_failed_list.txt"
+        self.save_to_query_folder = True # Should we save to multiple folders?
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
         self.filename_prefix = "derpi_"
         self.sft_max_attempts = 10 # Maximum retries in search_for_tag()
         self.max_search_page_retries = 10 # maximum retries for a search page
+        self.combined_download_folder_name = "combined_downloads"# Name of subfolder to use when saving to only one folder
         return
 
 
@@ -345,6 +347,10 @@ class config_handler():
             self.failed_list_path = config.get('Settings', 'failed_list_path')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.save_to_query_folder = config.getboolean('Settings', 'save_to_query_folder')
+        except ConfigParser.NoOptionError:
+            pass
         return
 
     def save_settings(self,settings_path):
@@ -361,6 +367,7 @@ class config_handler():
         config.set('Settings', 'input_list_path', self.input_list_path )
         config.set('Settings', 'done_list_path', self.done_list_path )
         config.set('Settings', 'failed_list_path', self.failed_list_path )
+        config.set('Settings', 'save_to_query_folder', str(self.save_to_query_folder) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
@@ -639,6 +646,9 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                     return False
 
 
+
+
+
 def download_submission(settings,search_query,submission_id):
     """Download a submission from Derpibooru"""
     assert_is_string(search_query)
@@ -648,14 +658,23 @@ def download_submission(settings,search_query,submission_id):
     #logging.debug("Downloading submission:"+submission_id)
     # Build JSON paths
     json_output_filename = submission_id+".json"
-    json_output_path = os.path.join(settings.output_folder,query_for_filename,"json",json_output_filename)
+    if settings.save_to_query_folder is True:
+        json_output_path = os.path.join(settings.output_folder,query_for_filename,"json",json_output_filename)
+    else:
+        # Option to save to a single combined folder
+        json_output_path = os.path.join(settings.output_folder,combined_download_folder_name,"json",json_output_filename)
     # Check if download can be skipped
     # Check if JSON exists
     if os.path.exists(json_output_path):
         logging.debug("JSON for this submission already exists, skipping.")
         return
+    # Build output folder path
+    if settings.save_to_query_folder is True:
+        output_folder = os.path.join(settings.output_folder,query_for_filename)
+    else:
+        # Option to save to a single combined folder
+        output_folder = os.path.join(settings.output_folder,settings.combined_download_folder_name)
     # Check for dupliactes in download folder
-    output_folder = os.path.join(settings.output_folder,query_for_filename)
     if copy_over_if_duplicate(settings, submission_id, output_folder):
         return
     # Build JSON URL
@@ -765,6 +784,9 @@ def download_submission_id_list(settings,submission_ids,query):
     if len(submission_ids) == 0:
         logging.warning("No submissions to save! Query:"+str(query))
         append_list(query, settings.failed_list_path, initial_text="# List of failed items.\n")
+    if settings.reverse:
+        logging.info("Reverse mode is active, reversing download order.")
+        submission_ids.reverse()
     for submission_id in submission_ids:
         submission_counter += 1
         # Only save pickle every 1000 items to help avoid pickle corruption
