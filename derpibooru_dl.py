@@ -437,7 +437,7 @@ def load_search_page(settings,search_url):
         try:
             search_page_list = json.loads(search_page)
         except ValueError, err:
-            loggin.error("Failed to read JSON on attempt "+str(sttempt_counter)+"for url"+search_url)
+            logging.error("Failed to read JSON on attempt "+str(sttempt_counter)+"for url"+search_url)
             logging.error( locals() )
             continue
         assert( type( search_page_list ) == type( [] ) )# This should be a list
