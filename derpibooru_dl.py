@@ -872,7 +872,9 @@ def download_query_list(settings,query_list):
 def convert_tag_string_to_search_string(settings,query):
     """Fix a tag string for use as a search query string"""
     colons_fixed = query.replace("-colon-",":")
-    return colons_fixed
+    dashes_fixed = colons_fixed.replace("-dash-","-")
+    dots_fixed = dashes_fixed.replace("-dot-",".")
+    return dots_fixed
 
 def convert_tag_list_to_search_string_list(settings,query_list):
     """Convert a whole list of queries to the new search format"""
@@ -886,7 +888,9 @@ def convert_tag_list_to_search_string_list(settings,query_list):
 def convert_query_for_path(settings,query):
     """Convert a query to the old style -colon- format for filenames"""
     colons_fixed = query.replace(":", "-colon-")
-    return colons_fixed
+    dashes_fixed = colons_fixed.replace("-", "-dash-")
+    dots_fixed = dashes_fixed.replace(".", "-dot-")
+    return dots_fixed
 
 
 def main():
