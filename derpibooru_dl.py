@@ -443,9 +443,11 @@ def load_search_page(settings,search_url):
         assert( type( search_page_list ) == type( [] ) )# This should be a list
         #print search_page_list
         try:
-        # Extract item ids
+            # Extract item ids
             this_page_item_ids = []
             for item_dict in search_page_list:
+                if item_dict is None:
+                    continue
                 item_id = item_dict["id_number"]
                 this_page_item_ids.append(str(item_id))
         except TypeError, err:
@@ -454,7 +456,6 @@ def load_search_page(settings,search_url):
             logging.debug("saving local variables to pickle")
             save_pickle("debug\\locals.pickle",locals())
             logging.exception(err)
-            sys.exit()
         return this_page_item_ids
     logging.error("Too many failed retries loading search page, failing.")
     return
@@ -916,6 +917,8 @@ def main():
     #print search_for_tag(settings,"test")
     #process_tag(settings,"test")
     #copy_over_if_duplicate(settings,"134533","download\\flitterpony")
+    #a = read_pickle("debug\\locals.pickle")
+    #print ""
     #return
     # /DEBUG
     # Handle resuming
