@@ -158,7 +158,7 @@ def getwithinfo(url):
             logging.debug(str(err))
             continue
         except socket.timeout, err:
-            logger.debug(str( type(err) ) )
+            logging.debug(str( type(err) ) )
             logging.debug(str(err))
             continue
         delay(GET_RETRY_DELAY)
@@ -442,11 +442,19 @@ def load_search_page(settings,search_url):
             continue
         assert( type( search_page_list ) == type( [] ) )# This should be a list
         #print search_page_list
+        try:
         # Extract item ids
-        this_page_item_ids = []
-        for item_dict in search_page_list:
-            item_id = item_dict["id_number"]
-            this_page_item_ids.append(str(item_id))
+            this_page_item_ids = []
+            for item_dict in search_page_list:
+                item_id = item_dict["id_number"]
+                this_page_item_ids.append(str(item_id))
+        except TypeError, err:
+            logging.error( str( type(err ) ) )
+            logging.error( locals() )
+            logging.debug("saving local variables to pickle")
+            save_pickle("debug\\locals.pickle",locals())
+            logging.exception(err)
+            sys.exit()
         return this_page_item_ids
     logging.error("Too many failed retries loading search page, failing.")
     return
