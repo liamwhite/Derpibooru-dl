@@ -93,7 +93,6 @@ class settings_handler:
         return
 
 def process_submission_data_tuple(settings,submission_data_tuple):
-    assert(type(submission_data_tuple) is type([]))
     # Build expected paths
     image_input_filepath, json_input_filepath, submission_id = submission_data_tuple
     input_dir, image_filename = os.path.split(image_input_filepath)
