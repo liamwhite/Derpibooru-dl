@@ -29,7 +29,7 @@ class settings_handler:
         self.downloads_folder = "download"# Folder to process
         self.output_folder = os.path.join(self.downloads_folder,"combined_downloads")# Folder to output to
         self.use_tag_list = True# Use tag list instead of processing everything
-        self.move = False# Move files instead of copying them
+        self.move_files = False# Move files instead of copying them
         self.reverse = False
         self.input_list_path = "config\\tags_to_deduplicate.txt"
         self.done_list_path = "config\\derpibooru_deduplicate_done_list.txt"
@@ -56,7 +56,7 @@ class settings_handler:
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.move = config.getboolean('Settings', 'move')
+            self.move_files = config.getboolean('Settings', 'move_files')
         except ConfigParser.NoOptionError:
             pass
         try:
@@ -83,7 +83,7 @@ class settings_handler:
         config.set('Settings', 'downloads_folder', self.downloads_folder )
         config.set('Settings', 'output_folder', self.output_folder )
         config.set('Settings', 'use_tag_list', str(self.use_tag_list) )
-        config.set('Settings', 'move', str(self.move) )
+        config.set('Settings', 'move_files', str(self.move_files) )
         config.set('Settings', 'reverse', str(self.reverse) )
         config.set('Settings', 'input_list_path', str(self.input_list_path) )
         config.set('Settings', 'done_list_path', str(self.done_list_path) )
@@ -93,14 +93,14 @@ class settings_handler:
         return
 
 def process_submission_data_tuple(settings,submission_data_tuple):
+    assert(type(submission_data_tuple) is type([]))
     # Build expected paths
     image_input_filepath, json_input_filepath, submission_id = submission_data_tuple
-    input_dir, match_filename = os.path.split(image_input_filepath)
+    input_dir, image_filename = os.path.split(image_input_filepath)
     json_output_filename = os.path.split(json_input_filepath)[1]
     json_output_folder = os.path.join(settings.output_folder, "json")
-
     json_output_path = os.path.join(json_output_folder, json_output_filename)
-    image_output_path = os.path.join(settings.output_folder,match_filename)
+    image_output_path = os.path.join(settings.output_folder,image_filename)
     # Ensure output path exists
     if not os.path.exists(json_output_folder):
         os.makedirs(json_output_folder)
@@ -109,7 +109,7 @@ def process_submission_data_tuple(settings,submission_data_tuple):
     # Check that both files exist in the input location and skip if either is missing
     # Ensure output location exists
     # Depending on mode, wither copy or move files to output location
-    if settings.move is True:
+    if settings.move_files is True:
         logging.info("Moving files for submission: "+submission_id+" from "+input_dir+" to "+settings.output_folder)
         try:
             # Copy submission file
@@ -143,7 +143,7 @@ def generate_image_tuples(settings,input_folder_path):
     image_glob_string = os.path.join(input_folder_path, settings.filename_prefix+"*")
     # list image files in folder
     image_files_list = glob.glob(image_glob_string)
-    print "image_files_list", image_files_list
+    #print "image_files_list", image_files_list
     # Extract submission ids from filenames
     image_tuples = []
     for image_file_path in image_files_list:
@@ -153,7 +153,7 @@ def generate_image_tuples(settings,input_folder_path):
             image_id = image_id_search.group(1)
             image_tuple = (image_file_path, image_id)
             image_tuples.append(image_tuple)
-    print "image_tuples", image_tuples
+    #print "image_tuples", image_tuples
     return image_tuples
 
 
@@ -164,7 +164,7 @@ def generate_json_tuples(settings,input_folder_path):
     json_glob_string = os.path.join(input_folder_path,"json","*.json")
     # list json files
     json_files_list = glob.glob(json_glob_string)
-    print "json_files_list", json_files_list
+    #print "json_files_list", json_files_list
      # Extract JSON ids
     json_tuples = []
     for json_file_path in json_files_list:
@@ -174,7 +174,7 @@ def generate_json_tuples(settings,input_folder_path):
             json_id = json_id_search.group(1)
             json_tuple = (json_file_path, json_id)
             json_tuples.append(json_tuple)
-    print "json_tuples", json_tuples
+    #print "json_tuples", json_tuples
     return json_tuples
 
 
@@ -194,7 +194,7 @@ def join_submission_data_lists(settings,image_tuples,json_tuples):
                 json_file_path = json_tuple[0]
                 joined_file_tuple = (image_file_path, json_file_path, image_id)
                 joined_files_tuples.append(joined_file_tuple)
-    print "joined_files_tuples", joined_files_tuples
+    #print "joined_files_tuples", joined_files_tuples
     return joined_files_tuples
 
 
@@ -219,16 +219,22 @@ def process_folder(settings,folder_name):
     # Process each pair
     for submission_data_tuple in submission_data_tuples:
         process_submission_data_tuple(settings, submission_data_tuple)
+    # Add folder to done list
+    append_list(folder_name, list_file_path=settings.done_list_path, initial_text="# List of completed items.\n", overwrite=False)
+    return
 
 
 def process_folders(settings,folder_names):
     logging.info("Starting to deduplicate folders")
     for folder_name in folder_names:
         process_folder(settings,folder_name)
+    return
+
 
 def list_subfolders(start_path):
     for root, dirs, files in os.walk(start_path):
         return dirs
+
 
 def main():
     settings = settings_handler("config\\derpibooru_deduplicate_config.cfg")
