@@ -37,13 +37,13 @@ class settings_handler:
 
 def process_submission_data_tuple(settings,submission_data_tuple):
     # Build expected paths
-    input_filepath, json_filepath, submission_id = submission_data_tuple
-    input_dir, match_filename = os.path.split(input_filepath)
-    json_output_filename = os.path.split(json_filepath)[1]
+    image_input_filepath, json_input_filepath, submission_id = submission_data_tuple
+    input_dir, match_filename = os.path.split(image_input_filepath)
+    json_output_filename = os.path.split(json_input_filepath)[1]
     json_output_folder = os.path.join(settings.output_folder, "json")
 
     json_output_path = os.path.join(json_output_folder, json_output_filename)
-    submission_output_path = os.path.join(settings.output_folder,match_filename)
+    image_output_path = os.path.join(settings.output_folder,match_filename)
     # Ensure output path exists
     if not os.path.exists(json_output_folder):
         os.makedirs(json_output_folder)
@@ -53,21 +53,31 @@ def process_submission_data_tuple(settings,submission_data_tuple):
     # Ensure output location exists
     # Depending on mode, wither copy or move files to output location
     if settings.move is True:
-        # Move over files
-        pass
-    else:
-        # Copy over files
-        logging.info("Copying files for submission: "+submission_id+" from "+input_dir+" to "+settings.output_folder)
+        logging.info("Moving files for submission: "+submission_id+" from "+input_dir+" to "+settings.output_folder)
         try:
             # Copy submission file
-            shutil.copy2(input_filepath, submission_output_path)
+            shutil.move(image_input_filepath, image_output_path)
             # Copy JSON
-            shutil.copy2(json_filepath, json_output_path)
+            shutil.move(json_input_filepath, json_output_path)
             return True
         except IOError, err:
             logging.error("Error copying files!")
             logging.exception(err)
             return False
+    else:
+        # Copy over files
+        logging.info("Copying files for submission: "+submission_id+" from "+input_dir+" to "+settings.output_folder)
+        try:
+            # Copy submission file
+            shutil.copy2(image_input_filepath, image_output_path)
+            # Copy JSON
+            shutil.copy2(json_input_filepath, json_output_path)
+            return True
+        except IOError, err:
+            logging.error("Error copying files!")
+            logging.exception(err)
+            return False
+
 
 def generate_image_tuples(settings,input_folder_path):
     """Generate a list of tuples of image file paths and their id numbers.
@@ -89,6 +99,7 @@ def generate_image_tuples(settings,input_folder_path):
     print "image_tuples", image_tuples
     return image_tuples
 
+
 def generate_json_tuples(settings,input_folder_path):
     """Generate a list of tuples of json file paths and their id numbers.
     e.g. ("download\\json\\12345.json", "12345")"""
@@ -108,6 +119,7 @@ def generate_json_tuples(settings,input_folder_path):
             json_tuples.append(json_tuple)
     print "json_tuples", json_tuples
     return json_tuples
+
 
 def join_submission_data_lists(settings,image_tuples,json_tuples):
     # Data tuple formats:
@@ -129,8 +141,6 @@ def join_submission_data_lists(settings,image_tuples,json_tuples):
     return joined_files_tuples
 
 
-
-
 def generate_submission_data_tuples(settings,input_folder_path):
     image_tuples = generate_image_tuples(settings,input_folder_path)
     json_tuples = generate_json_tuples(settings,input_folder_path)
@@ -139,12 +149,14 @@ def generate_submission_data_tuples(settings,input_folder_path):
     return submission_data_tuples
 
 
-
 def process_folder(settings,folder_name):
     input_folder_path = os.path.join(settings.downloads_folder,folder_name)
+    # Make sure input folder is valid
     if not os.path.exists(input_folder_path):
         logging.error("specified folder does not exist, cannot process it."+input_folder_path)
         return
+    if folder_name == settings.output_folder:
+        logging.error("Cannot deduplicate output folder!")
     # Buld pairs of submission + metadata files to process
     submission_data_tuples = generate_submission_data_tuples(settings,input_folder_path)
     # Process each pair
@@ -152,17 +164,22 @@ def process_folder(settings,folder_name):
         process_submission_data_tuple(settings, submission_data_tuple)
 
 
-
 def process_folders(settings,folder_names):
     logging.info("Starting to deduplicate folders")
     for folder_name in folder_names:
         process_folder(settings,folder_name)
 
-
+def list_subfolders(start_path):
+    for root, dirs, files in os.walk(start_path):
+        return dirs
 
 def main():
     settings = settings_handler()
-    tag_list = derpibooru_dl.import_list(settings.input_list_path)
+    if settings.use_tag_list is True:
+        tag_list = derpibooru_dl.import_list(settings.input_list_path)
+    elif settings.use_tag_list is False:
+        # Generate list of all folders in download folder
+        tag_list = list_subfolders(settings.downloads_folder)
     process_folders(settings,tag_list)
 
 if __name__ == '__main__':
