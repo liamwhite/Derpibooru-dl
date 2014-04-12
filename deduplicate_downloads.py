@@ -16,14 +16,17 @@ import os
 import glob
 import re
 import shutil
+import ConfigParser
 
 class settings_handler:
-    def __init__(self):
+    def __init__(self,settings_path="config\\derpibooru_deduplicate_config.cfg"):
         self.set_defaults()
+        self.load_file(settings_path)
+        self.save_settings(settings_path)
         return
 
     def set_defaults(self):
-        self.downloads_folder = "G:\derpibooru_dl\download"# Folder to process
+        self.downloads_folder = "download"# Folder to process
         self.output_folder = os.path.join(self.downloads_folder,"combined_downloads")# Folder to output to
         self.use_tag_list = True# Use tag list instead of processing everything
         self.move = False# Move files instead of copying them
@@ -34,6 +37,60 @@ class settings_handler:
         self.filename_prefix = "derpi_"
         return
 
+    def load_file(self,settings_path):
+        config = ConfigParser.RawConfigParser()
+        if not os.path.exists(settings_path):
+            return
+        config.read(settings_path)
+        # General settings
+        try:
+            self.downloads_folder = config.get('Settings', 'downloads_folder')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.output_folder = config.get('Settings', 'output_folder')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.use_tag_list = config.getboolean('Settings', 'use_tag_list')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.move = config.getboolean('Settings', 'move')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.reverse = config.getboolean('Settings', 'reverse')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.input_list_path = config.get('Settings', 'input_list_path')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.done_list_path = config.get('Settings', 'done_list_path')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.combined_download_folder_name = config.get('Settings', 'combined_download_folder_name')
+        except ConfigParser.NoOptionError:
+            pass
+        return
+
+    def save_settings(self,settings_path):
+        config = ConfigParser.RawConfigParser()
+        config.add_section('Settings')
+        config.set('Settings', 'downloads_folder', self.downloads_folder )
+        config.set('Settings', 'output_folder', self.output_folder )
+        config.set('Settings', 'use_tag_list', str(self.use_tag_list) )
+        config.set('Settings', 'move', str(self.move) )
+        config.set('Settings', 'reverse', str(self.reverse) )
+        config.set('Settings', 'input_list_path', str(self.input_list_path) )
+        config.set('Settings', 'done_list_path', str(self.done_list_path) )
+        config.set('Settings', 'combined_download_folder_name', str(self.combined_download_folder_name) )
+        with open(settings_path, 'wb') as configfile:
+            config.write(configfile)
+        return
 
 def process_submission_data_tuple(settings,submission_data_tuple):
     # Build expected paths
@@ -174,7 +231,7 @@ def list_subfolders(start_path):
         return dirs
 
 def main():
-    settings = settings_handler()
+    settings = settings_handler("config\\derpibooru_deduplicate_config.cfg")
     if settings.use_tag_list is True:
         tag_list = derpibooru_dl.import_list(settings.input_list_path)
     elif settings.use_tag_list is False:
