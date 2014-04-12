@@ -18,6 +18,7 @@ import re
 import shutil
 import ConfigParser
 
+
 class settings_handler:
     def __init__(self,settings_path="config\\derpibooru_deduplicate_config.cfg"):
         self.set_defaults()
@@ -238,6 +239,7 @@ def list_subfolders(start_path):
 def main():
     settings = settings_handler("config\\derpibooru_deduplicate_config.cfg")
     if settings.use_tag_list is True:
+        # Load todo list
         tag_list = derpibooru_dl.import_list(settings.input_list_path)
     elif settings.use_tag_list is False:
         # Generate list of all folders in download folder
