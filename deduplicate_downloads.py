@@ -11,13 +11,13 @@
 #!/usr/bin/env python
 
 import derpibooru_dl
-
+import logging
 
 
 
 class settings_handler:
     def __init__(self):
-        set_defaults()
+        self.set_defaults()
         return
 
     def set_defaults(self):
@@ -32,19 +32,14 @@ class settings_handler:
         self.filename_prefix = "derpi_"
         return
 
-def copy_submission_pair(settings,submission_data_pair):
 
-
-
-
-
-
-def process_submission_data_pair(settings,submission_data_pair):
+def process_submission_data_tuple(settings,submission_data_tuples):
     # Build expected paths
     input_dir, match_filename = os.path.split(glob_match)
     expected_json_input_filename = submission_id+".json"
-    expected_json_input_location = submission_data_pair[1]
+    expected_json_input_location = submission_data_tuples[1]
     json_output_folder = os.path.join(output_folder, "json")
+    json_output_filename = submission_data_tuples[2]+".json"
     json_output_path = os.path.join(json_output_folder, json_output_filename)
     submission_output_path = os.path.join(settings.output_folder,match_filename)
     # Ensure output path exists
@@ -72,18 +67,61 @@ def process_submission_data_pair(settings,submission_data_pair):
             logging.exception(err)
             return False
 
-def join_submission_data_lists(settings,image_files_list,json_files_list)
 
-def generate_submission_data_pairs(settings,input_folder_path)
+def join_submission_data_lists(settings,image_files_list,json_files_list):
+    # Data tuple formats:
+    # image_tuple = (image_file_path, image_id)
+    # json_tuple = (json_file_path, json_id)
+    # joined_file_tuple = (image_file_path, json_file_path, image_id)
+    # Extract submission ids from filenames
+    image_tuples = []
+    for image_file_path in image_files_list:
+        image_id_regex = settings.filename_prefix+"(\d+)"
+        image_id_search = re.search(image_id_regex,image_file_path)
+        if image_id_search:
+            image_id = image_id_search.group(1)
+            image_tuple = (image_file_path, image_id)
+            image_tuples.append(image_tuple)
+    print "image_tuples", image_tuples
+    # Extract JSON ids
+    json_tuples = []
+    for json_file_path in json_files_list:
+        json_id_regex = "(\d+)\.json"
+        json_id_search = re.search(json_id_regex,json_file_path)
+        if json_id_search:
+            json_id = image_id_search.group(1)
+            json_tuple = (json_file_path, json_id)
+            json_tuples.append(json_tuple)
+    print "json_tuples", json_tuples
+    # Sort and join tuples
+    joined_files_tuples = []
+    for image_tuple in image_tuples:
+        image_id = image_tuple[1]
+        for json_tuple in json_tuples:
+            json_id = json_tuple[1]
+            if json_id == image_id:
+                image_file_path = image_tuple[0]
+                json_file_path = json_tuple[0]
+                joined_file_tuple = (image_file_path, json_file_path, image_id)
+                joined_files_tuples.append(joined_file_tuple)
+    print "joined_files_tuples", joined_files_tuples
+    return joined_files_tuples
+
+
+
+
+def generate_submission_data_pairs(settings,input_folder_path):
     # generate glob string for images
     image_glob_string = input_folder_path+settings.filename_prefix+"*"
     # list image files in folder
     image_glob_matches = glob.glob(glob_string)
     # Generate JSON glob string
-    json_glob_string = input_folder_path+settings.filename_prefix+"*"
+    json_glob_string = input_folder_path+"*.json"
     # list json files
     json_glob_matches = glob.glob(glob_string)
     # join lists into pairs of filepaths for each submission and its associated JSON
+    submission_data_tuples = join_submission_data_lists(settings,image_files_list,json_files_list)
+    return submission_data_tuples
 
 
 
@@ -93,10 +131,10 @@ def process_folder(settings,folder_name):
         logging.error("specified folder does not exist, cannot process it."+input_folder_path)
         return
     # Buld pairs of submission + metadata files to process
-    submission_data_pairs = generate_submission_data_pairs(settings,input_folder_path)
+    submission_data_tuples = generate_submission_data_pairs(settings,input_folder_path)
     # Process each pair
-    for submission_data_pair in submission_data_pairs:
-        process_submission_data_pair(settings, submission_data_pair)
+    for submission_data_tuple in submission_data_tuples:
+        process_submission_data_tuple(settings, submission_data_tuple)
 
 
 
@@ -110,7 +148,7 @@ def process_folders(settings,folder_names):
 def main():
     settings = settings_handler()
     tag_list = derpibooru_dl.import_list(settings.input_list_path)
-    process_folders(settings,folder_names)
+    process_folders(settings,tag_list)
 
 if __name__ == '__main__':
     # Setup logging
@@ -119,8 +157,8 @@ if __name__ == '__main__':
         main()
     except Exception, err:
         # Log exceptions
-        logger.critical("Unhandled exception!")
-        logger.critical(str( type(err) ) )
+        logging.critical("Unhandled exception!")
+        logging.critical(str( type(err) ) )
         logging.exception(err)
     logging.info( "Program finished.")
     #raw_input("Press return to close")
