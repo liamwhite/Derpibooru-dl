@@ -16,6 +16,7 @@ import os
 import glob
 import re
 import shutil
+import time
 import ConfigParser
 
 
@@ -35,6 +36,7 @@ class settings_handler:
         self.input_list_path = "config\\tags_to_deduplicate.txt"
         self.done_list_path = "config\\derpibooru_deduplicate_done_list.txt"
         self.combined_download_folder_name = "combined_downloads"# Name of subfolder to use when saving to only one folder
+        self.slow_for_debug = False # Pause between folders and files
         self.filename_prefix = "derpi_"
         return
 
@@ -76,6 +78,10 @@ class settings_handler:
             self.combined_download_folder_name = config.get('Settings', 'combined_download_folder_name')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.slow_for_debug = config.getboolean('Settings', 'slow_for_debug')
+        except ConfigParser.NoOptionError:
+            pass
         return
 
     def save_settings(self,settings_path):
@@ -89,9 +95,17 @@ class settings_handler:
         config.set('Settings', 'input_list_path', str(self.input_list_path) )
         config.set('Settings', 'done_list_path', str(self.done_list_path) )
         config.set('Settings', 'combined_download_folder_name', str(self.combined_download_folder_name) )
+        config.set('Settings', 'slow_for_debug', str(self.slow_for_debug) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
+
+
+def pause(delay_time):
+    logging.debug("Pausing for "+str(delay_time)+" seconds...")
+    time.sleep(delay_time)
+    logging.debug("Resuming operation")
+
 
 def process_submission_data_tuple(settings,submission_data_tuple):
     # Build expected paths
@@ -219,8 +233,10 @@ def process_folder(settings,folder_name):
     # Process each pair
     for submission_data_tuple in submission_data_tuples:
         process_submission_data_tuple(settings, submission_data_tuple)
+        if settings.slow_for_debug:
+            pause(1)
     # Add folder to done list
-    append_list(folder_name, list_file_path=settings.done_list_path, initial_text="# List of completed items.\n", overwrite=False)
+    derpibooru_dl.append_list(folder_name, list_file_path=settings.done_list_path, initial_text="# List of completed items.\n", overwrite=False)
     return
 
 
@@ -228,6 +244,8 @@ def process_folders(settings,folder_names):
     logging.info("Starting to deduplicate folders")
     for folder_name in folder_names:
         process_folder(settings,folder_name)
+        if settings.slow_for_debug:
+            pause(60)
     return
 
 
