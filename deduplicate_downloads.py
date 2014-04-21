@@ -121,7 +121,11 @@ def process_submission_data_tuple(settings,submission_data_tuple):
     if not os.path.exists(settings.output_folder):
         os.makedirs(settings.output_folder)
     # Check that both files exist in the input location and skip if either is missing
-    # Ensure output location exists
+    # Debug warning if overwriting existing file in output dir:
+    if os.path.exists(image_output_path):
+        logging.debug("Overwriting output image file.")
+    if os.path.exists(json_output_path):
+        logging.debug("Overwriting output JSON file.")
     # Depending on mode, wither copy or move files to output location
     if settings.move_files is True:
         logging.info("Moving files for submission: "+submission_id+" from "+input_dir+" to "+settings.output_folder)
@@ -213,6 +217,7 @@ def join_submission_data_lists(settings,image_tuples,json_tuples):
 
 
 def generate_submission_data_tuples(settings,input_folder_path):
+    logging.debug("Analysing input data...")
     image_tuples = generate_image_tuples(settings,input_folder_path)
     json_tuples = generate_json_tuples(settings,input_folder_path)
     # join lists into pairs of filepaths for each submission and its associated JSON
