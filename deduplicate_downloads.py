@@ -231,8 +231,9 @@ def process_folder(settings,folder_name):
     if not os.path.exists(input_folder_path):
         logging.error("specified folder does not exist, cannot process it."+input_folder_path)
         return
-    if folder_name == settings.output_folder:
+    if input_folder_path == settings.output_folder:
         logging.error("Cannot deduplicate output folder!")
+        return
     logging.info("Deduplicating from: "+str(input_folder_path))
     # Buld pairs of submission + metadata files to process
     submission_data_tuples = generate_submission_data_tuples(settings,input_folder_path)
