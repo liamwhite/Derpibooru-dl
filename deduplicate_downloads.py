@@ -228,6 +228,7 @@ def process_folder(settings,folder_name):
         return
     if folder_name == settings.output_folder:
         logging.error("Cannot deduplicate output folder!")
+    logging.info("Deduplicating from: "+str(input_folder_path))
     # Buld pairs of submission + metadata files to process
     submission_data_tuples = generate_submission_data_tuples(settings,input_folder_path)
     # Process each pair
@@ -241,6 +242,7 @@ def process_folder(settings,folder_name):
 
 
 def process_folders(settings,folder_names):
+    logging.debug("Folders to deduplicate: "+str(folder_names))
     logging.info("Starting to deduplicate folders")
     for folder_name in folder_names:
         process_folder(settings,folder_name)
