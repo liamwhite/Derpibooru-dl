@@ -671,7 +671,7 @@ def download_submission(settings,search_query,submission_id):
         json_output_path = os.path.join(settings.output_folder,query_for_filename,"json",json_output_filename)
     else:
         # Option to save to a single combined folder
-        json_output_path = os.path.join(settings.output_folder,combined_download_folder_name,"json",json_output_filename)
+        json_output_path = os.path.join(settings.output_folder,settings.combined_download_folder_name,"json",json_output_filename)
     # Check if download can be skipped
     # Check if JSON exists
     if os.path.exists(json_output_path):

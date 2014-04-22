@@ -108,6 +108,11 @@ def pause(delay_time):
 
 
 def process_submission_data_tuple(settings,submission_data_tuple):
+    """Take a tuple containing:
+        1. Submission file location
+        2. Submission info location
+        3. Submission ID number
+        And move/copy the submission files to the output folder"""
     # Build expected paths
     image_input_filepath, json_input_filepath, submission_id = submission_data_tuple
     input_dir, image_filename = os.path.split(image_input_filepath)
@@ -217,6 +222,7 @@ def join_submission_data_lists(settings,image_tuples,json_tuples):
 
 
 def generate_submission_data_tuples(settings,input_folder_path):
+    """Build a list of tuples for submissions in the target folder"""
     logging.debug("Analysing input data...")
     image_tuples = generate_image_tuples(settings,input_folder_path)
     json_tuples = generate_json_tuples(settings,input_folder_path)
@@ -238,7 +244,11 @@ def process_folder(settings,folder_name):
     # Buld pairs of submission + metadata files to process
     submission_data_tuples = generate_submission_data_tuples(settings,input_folder_path)
     # Process each pair
+    counter = 0
+    number_of_tuples = len(submission_data_tuples)
     for submission_data_tuple in submission_data_tuples:
+        counter +=1
+        logging.debug("Processing submission "+str(counter)+" of "+str(number_of_tuples))
         process_submission_data_tuple(settings, submission_data_tuple)
         if settings.slow_for_debug:
             pause(1)
@@ -250,7 +260,11 @@ def process_folder(settings,folder_name):
 def process_folders(settings,folder_names):
     logging.debug("Folders to deduplicate: "+str(folder_names))
     logging.info("Starting to deduplicate folders")
+    counter = 0
+    number_of_folders = len(folder_names)
     for folder_name in folder_names:
+        counter += 1
+        logging.info("Deduplicating folder "+str(counter)+" of "+str(number_of_folders)+" : "+str(folder_name))
         process_folder(settings,folder_name)
         if settings.slow_for_debug:
             pause(60)
