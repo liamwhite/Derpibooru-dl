@@ -154,6 +154,9 @@ def getwithinfo(url):
         except httplib.BadStatusLine, err:
             logging.debug(str(err))
             continue
+        except httplib.IncompleteRead, err:
+            logging.debug(str(err))
+            continue
         except mechanize.BrowserStateError, err:
             logging.debug(str(err))
             continue
