@@ -563,7 +563,16 @@ def search_for_tag(settings,search_tag):
                     logging.info("Tag was an alias, processing aliased tag instead")
                     return search_for_tag(settings, redirect_tag)
                 # Convert JSON to dict
-                search_page_dict = decode_json(search_page)
+                try:
+                    search_page_dict = json.loads(search_page)
+                except ValueError, err:
+                    if "Unterminated string starting at:" in str(err):
+                        # Retry if bad json recieved
+                        continue
+                    else:
+                        # Log locals and crash if unknown issue
+                        logging.critical(locals())
+                        raise(err)
                 # Extract submission_ids from page
                 this_page_item_ids= parse_tag_results_page(search_page_dict)
                 break
