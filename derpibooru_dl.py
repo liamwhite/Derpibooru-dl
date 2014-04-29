@@ -300,6 +300,7 @@ class config_handler():
         self.sft_max_attempts = 10 # Maximum retries in search_for_tag()
         self.max_search_page_retries = 10 # maximum retries for a search page
         self.combined_download_folder_name = "combined_downloads"# Name of subfolder to use when saving to only one folder
+        self.max_download_attempts = 10 # Number of times to retry a download before skipping
         return
 
 
@@ -385,15 +386,22 @@ def assert_is_string(object_to_test):
 
 
 def decode_json(json_string):
-    """Wrapper for JSON decoding"""
+    """Wrapper for JSON decoding
+    Return None object if known problem case occurs
+    Return decoded data if successful
+    Reraise unknown cases for caught exceptions"""
     assert_is_string(json_string)
     try:
         json_data = json.loads(json_string)
         return json_data
     except ValueError, err:
-        logging.critical(locals())
-        raise(err)
-
+        # Retry if bad json recieved
+        if "Unterminated string starting at:" in str(err):
+            return
+        # Log locals and crash if unknown issue
+        else:
+            logging.critical(locals())
+            raise(err)
 
 def read_file(path):
     """grab the contents of a file"""
@@ -563,16 +571,9 @@ def search_for_tag(settings,search_tag):
                     logging.info("Tag was an alias, processing aliased tag instead")
                     return search_for_tag(settings, redirect_tag)
                 # Convert JSON to dict
-                try:
-                    search_page_dict = json.loads(search_page)
-                except ValueError, err:
-                    if "Unterminated string starting at:" in str(err):
-                        # Retry if bad json recieved
-                        continue
-                    else:
-                        # Log locals and crash if unknown issue
-                        logging.critical(locals())
-                        raise(err)
+                search_page_dict = decode_json(search_page)
+                if json_dict is None:
+                    continue
                 # Extract submission_ids from page
                 this_page_item_ids= parse_tag_results_page(search_page_dict)
                 break
@@ -700,41 +701,48 @@ def download_submission(settings,search_query,submission_id):
         return
     # Build JSON URL
     json_url = "https://derpibooru.org/"+submission_id+".json?key="+settings.api_key
-    # Load JSON URL
-    json_page = get(json_url)
-    if not json_page:
+    # Retry if needed
+    download_attempt_counter = 0
+    while download_attempt_counter <= settings.max_download_attempts:
+        download_attempt_counter += 1
+        # Load JSON URL
+        json_page = get(json_url)
+        if not json_page:
+            continue
+        # Convert JSON to dict
+        json_dict = decode_json(json_page)
+        if json_dict is None:
+            continue
+        # Check if submission is deleted
+        if check_if_deleted_submission(json_dict):
+            logging.debug(json_page)
+            return
+        # Extract needed info from JSON
+        image_url = json_dict["image"]
+        image_filename = json_dict["file_name"]
+        image_file_ext = json_dict["original_format"]
+        # Build image output filenames
+        if settings.output_long_filenames:
+            image_output_filename = settings.filename_prefix+image_filename+"."+image_file_ext
+        else:
+            image_output_filename = settings.filename_prefix+submission_id+"."+image_file_ext
+        image_output_path = os.path.join(output_folder,image_output_filename)
+        # Load image data
+        authenticated_image_url = image_url+"?key="+settings.api_key
+        logging.debug("Loading submission image: "+authenticated_image_url)
+        image_data = get(authenticated_image_url)
+        if not image_data:
+            return
+        # Image should always be bigger than this, if it isn't we got a bad file
+        if len(image_data) < 100:
+            logging.error("Image data was too small! "+str(image_data))
+            continue
+        # Save image
+        save_file(image_output_path, image_data, True)
+        # Save JSON
+        save_file(json_output_path, json_page, True)
+        logging.debug("Download successful")
         return
-    # Convert JSON to dict
-    json_dict = decode_json(json_page)
-    # Check if submission is deleted
-    if check_if_deleted_submission(json_dict):
-        logging.debug(json_page)
-        return
-    # Extract needed info from JSON
-    image_url = json_dict["image"]
-    image_filename = json_dict["file_name"]
-    image_file_ext = json_dict["original_format"]
-    # Build image output filenames
-    if settings.output_long_filenames:
-        image_output_filename = settings.filename_prefix+image_filename+"."+image_file_ext
-    else:
-        image_output_filename = settings.filename_prefix+submission_id+"."+image_file_ext
-    image_output_path = os.path.join(output_folder,image_output_filename)
-    # Load image data
-    authenticated_image_url = image_url+"?key="+settings.api_key
-    logging.debug("Loading submission image: "+authenticated_image_url)
-    image_data = get(authenticated_image_url)
-    if not image_data:
-        return
-    # Image should always be bigger than this, if it isn't we got a bad file
-    if len(image_data) < 100:
-        logging.error("Image data was too small! "+str(image_data))
-        return
-    # Save image
-    save_file(image_output_path, image_data, True)
-    # Save JSON
-    save_file(json_output_path, json_page, True)
-    logging.debug("Download successful")
     return
 
 
