@@ -283,6 +283,7 @@ class config_handler():
     def set_defaults(self):
         # Login
         self.api_key = ""
+
         # Download Settings
         self.reverse = False
         self.output_folder = "download"# Root path to download to
@@ -294,6 +295,8 @@ class config_handler():
         self.done_list_path = "config\\derpibooru_done_list.txt"
         self.failed_list_path = "config\\derpibooru_failed_list.txt"
         self.save_to_query_folder = True # Should we save to multiple folders?
+        self.skip_downloads = False # Don't retrieve remote submission files after searching
+
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
         self.filename_prefix = "derpi_"
@@ -302,7 +305,6 @@ class config_handler():
         self.combined_download_folder_name = "combined_downloads"# Name of subfolder to use when saving to only one folder
         self.max_download_attempts = 10 # Number of times to retry a download before skipping
         return
-
 
     def load_file(self,settings_path):
         config = ConfigParser.RawConfigParser()
@@ -355,6 +357,10 @@ class config_handler():
             self.save_to_query_folder = config.getboolean('Settings', 'save_to_query_folder')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.skip_downloads = config.getboolean('Settings', 'skip_downloads')
+        except ConfigParser.NoOptionError:
+            pass
         return
 
     def save_settings(self,settings_path):
@@ -372,9 +378,11 @@ class config_handler():
         config.set('Settings', 'done_list_path', self.done_list_path )
         config.set('Settings', 'failed_list_path', self.failed_list_path )
         config.set('Settings', 'save_to_query_folder', str(self.save_to_query_folder) )
+        config.set('Settings', 'skip_downloads', str(self.skip_downloads) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
+
 
 
 def assert_is_string(object_to_test):
@@ -397,11 +405,13 @@ def decode_json(json_string):
     except ValueError, err:
         # Retry if bad json recieved
         if "Unterminated string starting at:" in str(err):
+            logging.debug("JSON data invalid, failed to decode.")
             return
         # Log locals and crash if unknown issue
         else:
             logging.critical(locals())
             raise(err)
+
 
 def read_file(path):
     """grab the contents of a file"""
@@ -698,6 +708,9 @@ def download_submission(settings,search_query,submission_id):
         output_folder = os.path.join(settings.output_folder,settings.combined_download_folder_name)
     # Check for dupliactes in download folder
     if copy_over_if_duplicate(settings, submission_id, output_folder):
+        return
+    # Option to skip loading remote submission files
+    if settings.skip_downloads is True:
         return
     # Build JSON URL
     json_url = "https://derpibooru.org/"+submission_id+".json?key="+settings.api_key
