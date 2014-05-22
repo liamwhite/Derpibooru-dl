@@ -296,9 +296,11 @@ class config_handler():
         self.failed_list_path = "config\\derpibooru_failed_list.txt"
         self.save_to_query_folder = True # Should we save to multiple folders?
         self.skip_downloads = False # Don't retrieve remote submission files after searching
+        self.sequentially_download_everything = False # download submission 1,2,3...
 
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
+        self.pointer_file_path = "config\\dl_everything_pointer.pkl"
         self.filename_prefix = "derpi_"
         self.sft_max_attempts = 10 # Maximum retries in search_for_tag()
         self.max_search_page_retries = 10 # maximum retries for a search page
@@ -842,6 +844,78 @@ def download_submission_id_list(settings,submission_ids,query):
     return
 
 
+def save_pointer_file(settings,start_number,finish_number):
+    """Save start and finish numbers to pickle"""
+    logging.debug("Saving resume data pickle")
+    # {"start_number":0, "finish_number":100}
+    # Build dict
+    resume_dict = {
+    "start_number":start_number,
+    "finish_number":finish_number
+    }
+    save_pickle(settings.pointer_file_path, resume_dict)
+    return
+
+
+def clear_pointer_file(settings):
+    """Erase range download pickle"""
+    logging.debug("Erasing resume data pickle")
+    if os.path.exists(settings.pointer_file_path):
+        os.remove(settings.pointer_file_path)
+    return
+
+
+def get_latest_submission_id(settings):
+    """Find the most recent submissions ID"""
+    search_url = "https://derpibooru.org/images.json&key="+settings.api_key
+    latest_submissions = load_search_page(settings,search_url)
+    ordered_latest_submissions = sorted(latest_submissions)
+    latest_submission_id = int(ordered_latest_submissions[0])
+    return latest_submission_id
+
+def download_everything(settings):
+    """Start downloading everything or resume downloading everything"""
+    # Look for pickle of range to iterate over
+    if os.path.exists(settings.pointer_file_path):
+        logging.debug("Resuming from pickle")
+        # Read pickle:
+        resume_dict = read_pickle(settings.pointer_file_path)
+        start_number = resume_dict["start_number"]
+        finish_number = resume_dict["finish_number"]
+        # Iterate over range
+        download_range(settings,start_number,finish_number)
+        return
+    else:
+        latest_submission_id = get_latest_submission_id(settings)
+        start_number = 0
+        finish_number = latest_submission + 1000 # Add a thousand to account for new submissions added during run
+        download_range(settings,start_number,finish_number)
+        return
+
+
+
+
+def download_range(settings,start_number,finish_number):
+    """Try to download every submission within a given range"""
+    submission_pointer = 0
+    assert(start_number <= finish_number)
+    total_submissions_to_attempt = (finish_number - start_number)
+    logging.info("Downloading range: "+str(start_number)+" to "+str(finish_number))
+    # Iterate over range of id numbers
+    while (submission_pointer <= finish_number):
+        # Only save pickle every 1000 items to help avoid pickle corruption
+        if (submission_counter % 1000) == 0:
+            save_pointer_file(settings, submission_pointer, finish_number)
+        logging.debug("Now working on submission "+str(submission_pointer)+" of "+str(total_submissions_to_attempt)+" : "+submission_id+" for: "+query )
+        # Try downloading each submission
+        download_submission(settings, query, submission_id)
+        print "\n\n"
+        submission_pointer += 1
+    # Clean up once everything is done
+    clear_pointer_file(settings)
+    return
+
+
 def process_tag(settings,search_tag):
     """Download submissions for a tag on derpibooru"""
     assert_is_string(search_tag)
@@ -971,6 +1045,8 @@ def main():
     # Process each search query
     if settings.download_query_list:
         download_query_list(settings,input_list)
+    if settings.sequentially_download_everything:
+        TODO
     return
 
 
