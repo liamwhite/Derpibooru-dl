@@ -363,6 +363,10 @@ class config_handler():
             self.skip_downloads = config.getboolean('Settings', 'skip_downloads')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.sequentially_download_everything = config.getboolean('Settings', 'sequentially_download_everything')
+        except ConfigParser.NoOptionError:
+            pass
         return
 
     def save_settings(self,settings_path):
@@ -381,6 +385,7 @@ class config_handler():
         config.set('Settings', 'failed_list_path', self.failed_list_path )
         config.set('Settings', 'save_to_query_folder', str(self.save_to_query_folder) )
         config.set('Settings', 'skip_downloads', str(self.skip_downloads) )
+        config.set('Settings', 'sequentially_download_everything', str(self.sequentially_download_everything) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
@@ -680,9 +685,6 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                     return False
 
 
-
-
-
 def download_submission(settings,search_query,submission_id):
     """Download a submission from Derpibooru"""
     assert_is_string(search_query)
@@ -873,6 +875,7 @@ def get_latest_submission_id(settings):
     latest_submission_id = int(ordered_latest_submissions[0])
     return latest_submission_id
 
+
 def download_everything(settings):
     """Start downloading everything or resume downloading everything"""
     # Look for pickle of range to iterate over
@@ -893,12 +896,11 @@ def download_everything(settings):
         return
 
 
-
-
 def download_range(settings,start_number,finish_number):
     """Try to download every submission within a given range"""
     submission_pointer = 0
     assert(start_number <= finish_number)
+    assert(finish_number <= 1000000)# less than 1 million, 634,101 submissions as of 23-5-2014
     total_submissions_to_attempt = (finish_number - start_number)
     logging.info("Downloading range: "+str(start_number)+" to "+str(finish_number))
     # Iterate over range of id numbers
@@ -1046,7 +1048,7 @@ def main():
     if settings.download_query_list:
         download_query_list(settings,input_list)
     if settings.sequentially_download_everything:
-        TODO
+        download_everything(settings)
     return
 
 
