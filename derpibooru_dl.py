@@ -297,6 +297,8 @@ class config_handler():
         self.save_to_query_folder = True # Should we save to multiple folders?
         self.skip_downloads = False # Don't retrieve remote submission files after searching
         self.sequentially_download_everything = False # download submission 1,2,3...
+        self.download_everything_backwards = False # when downloading everything in range mode should we go 10,9,8,7...?
+        self.download_last_week = False # Download (approximately) the last weeks submissions
 
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
@@ -367,6 +369,14 @@ class config_handler():
             self.sequentially_download_everything = config.getboolean('Settings', 'sequentially_download_everything')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.download_everything_backwards = config.getboolean('Settings', 'download_everything_backwards')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.download_last_week = config.getboolean('Settings', 'download_last_week')
+        except ConfigParser.NoOptionError:
+            pass
         return
 
     def save_settings(self,settings_path):
@@ -386,6 +396,8 @@ class config_handler():
         config.set('Settings', 'save_to_query_folder', str(self.save_to_query_folder) )
         config.set('Settings', 'skip_downloads', str(self.skip_downloads) )
         config.set('Settings', 'sequentially_download_everything', str(self.sequentially_download_everything) )
+        config.set('Settings', 'download_everything_backwards', str(self.download_everything_backwards) )
+        config.set('Settings', 'download_last_week', str(self.download_last_week) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
@@ -443,11 +455,14 @@ def setup_browser():
     # Follows refresh 0 but not hangs on refresh > 0
     br.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
     # User-Agent (this is cheating, ok?)
-    br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
+    #br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
+    br.addheaders = [('User-agent', 'Trixie is worst pony')]#[13:57] <%barbeque> as long as it's not something like "trixie is worst pony"
+    print "trixie is worst pony"
     return
 
 
 def load_search_page(settings,search_url):
+    global search_page_dict
     attempt_counter = 0
     while attempt_counter <= settings.max_search_page_retries:
         attempt_counter += 1
@@ -463,13 +478,14 @@ def load_search_page(settings,search_url):
         # Convert JSON to dict
         assert_is_string(search_page)
         try:
-            search_page_list = json.loads(search_page)
+            search_page_dict = json.loads(search_page)
         except ValueError, err:
             logging.error("Failed to read JSON on attempt "+str(attempt_counter)+"for url"+search_url)
             logging.error( locals() )
             continue
-        assert( type( search_page_list ) == type( [] ) )# This should be a list
+        search_page_list = search_page_dict["search"]
         #print search_page_list
+        assert( type( search_page_list ) == type( [] ) )# This should be a list
         try:
             # Extract item ids
             this_page_item_ids = []
@@ -484,6 +500,7 @@ def load_search_page(settings,search_url):
             logging.debug("saving local variables to pickle")
             save_pickle("debug\\locals.pickle",locals())
             logging.exception(err)
+        print this_page_item_ids
         return this_page_item_ids
     logging.error("Too many failed retries loading search page, failing.")
     return
@@ -732,6 +749,7 @@ def download_submission(settings,search_query,submission_id):
             continue
         # Check if submission is deleted
         if check_if_deleted_submission(json_dict):
+            logging.debug("Submission was deleted.")
             logging.debug(json_page)
             return
         # Extract needed info from JSON
@@ -876,10 +894,24 @@ def get_latest_submission_id(settings):
     return latest_submission_id
 
 
+def download_this_weeks_submissions(settings):
+    """Download (about) one weeks worth of the most recent submissions"""
+    # Get starting number
+    latest_submission_id = get_latest_submission_id(settings)
+    # Calculate ending number
+    one_weeks_submissions_number = 1000 * 7 # less than 1000 per day
+    finish_number = latest_submission - one_weeks_submissions_number  # Add a thousand to account for new submissions added during run
+    logging.info("Downloading the last "+str(one_weeks_submissions_number)+" submissions. Starting at "+str(latest_submission_id)+" and stopping at "+str(finish_number))
+    download_range(settings,latest_submission_id,finish_number)
+    return
+
+
 def download_everything(settings):
     """Start downloading everything or resume downloading everything"""
+    logging.info("Downloading everything by range")
     # Look for pickle of range to iterate over
     if os.path.exists(settings.pointer_file_path):
+        # Resume
         logging.debug("Resuming from pickle")
         # Read pickle:
         resume_dict = read_pickle(settings.pointer_file_path)
@@ -889,33 +921,52 @@ def download_everything(settings):
         download_range(settings,start_number,finish_number)
         return
     else:
+        # Start downloading everything
         latest_submission_id = get_latest_submission_id(settings)
         start_number = 0
         finish_number = latest_submission + 1000 # Add a thousand to account for new submissions added during run
+        if settings.download_everything_backwards:
+            # Swap start and finish numbers for backwards mode
+            start_number, finish_number =  finish_number, start_number
         download_range(settings,start_number,finish_number)
         return
 
 
 def download_range(settings,start_number,finish_number):
-    """Try to download every submission within a given range"""
+    """Try to download every submission within a given range
+    If finish number is less than start number, run over the range backwards"""
     submission_pointer = 0
-    assert(start_number <= finish_number)
+    if(start_number <= finish_number):
+        backwards = True
+    else:
+        backwards = False
     assert(finish_number <= 1000000)# less than 1 million, 634,101 submissions as of 23-5-2014
+    assert(start_number >= 0)# First submission is ID 0
+    assert(type(finish_number) is type(1))# Must be integer
+    assert(type(start_number) is type(1))# Must be integer
     total_submissions_to_attempt = (finish_number - start_number)
     logging.info("Downloading range: "+str(start_number)+" to "+str(finish_number))
     # Iterate over range of id numbers
-    while (submission_pointer <= finish_number):
+    while (submission_pointer != (finish_number + 1) ):
+        assert(submission_pointer >= 0)# First submission is ID 0
+        assert(submission_pointer <= 1000000)# less than 1 million, 634,101 submissions as of 23-5-2014
+        assert(type(submission_pointer) is type(1))# Must be integer
         # Only save pickle every 1000 items to help avoid pickle corruption
-        if (submission_counter % 1000) == 0:
+        if (submission_pointer % 1000) == 0:
             save_pointer_file(settings, submission_pointer, finish_number)
         logging.debug("Now working on submission "+str(submission_pointer)+" of "+str(total_submissions_to_attempt)+" : "+submission_id+" for: "+query )
         # Try downloading each submission
         download_submission(settings, query, submission_id)
         print "\n\n"
-        submission_pointer += 1
+        # Add/subtract from counter depending on mode
+        if backwards:
+            submission_pointer -= 1
+        else:
+            submission_pointer += 1
     # Clean up once everything is done
     clear_pointer_file(settings)
     return
+
 
 
 def process_tag(settings,search_tag):
@@ -1049,6 +1100,8 @@ def main():
         download_query_list(settings,input_list)
     if settings.sequentially_download_everything:
         download_everything(settings)
+    if settings.download_last_week:
+        download_this_weeks_submissions(settings)
     return
 
 
