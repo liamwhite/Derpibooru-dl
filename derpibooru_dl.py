@@ -287,7 +287,6 @@ class config_handler():
         # Download Settings
         self.reverse = False
         self.output_folder = "download"# Root path to download to
-        self.download_tags_list = False
         self.download_submission_ids_list = True
         self.download_query_list = True
         self.output_long_filenames = False # Should we use the derpibooru supplied filename with the tags? !UNSUPPORTED!
@@ -327,10 +326,6 @@ class config_handler():
             pass
         try:
             self.output_folder = config.get('Settings', 'output_folder')
-        except ConfigParser.NoOptionError:
-            pass
-        try:
-            self.download_tags_list = config.getboolean('Settings', 'download_tags_list')
         except ConfigParser.NoOptionError:
             pass
         try:
@@ -386,7 +381,6 @@ class config_handler():
         config.add_section('Settings')
         config.set('Settings', 'reverse', str(self.reverse) )
         config.set('Settings', 'output_folder', self.output_folder )
-        config.set('Settings', 'download_tags_list', str(self.download_tags_list) )
         config.set('Settings', 'download_submission_ids_list', str(self.download_submission_ids_list) )
         config.set('Settings', 'download_query_list', str(self.download_query_list) )
         config.set('Settings', 'output_long_filenames', str(self.output_long_filenames) )
@@ -564,82 +558,6 @@ def detect_redirect_page(html):
                 return raw_tag
     else:
         return False
-
-
-def parse_tag_results_page(search_page_dict):
-    """Convert raw JSON from a search page into a list of submissionIDs"""
-    # Extract item ids
-    this_page_item_ids = []
-    this_page_submissions = search_page_dict["images"]
-    counter = 0
-    for item_dict in this_page_submissions:
-        counter += 1
-        try:
-            item_id = item_dict["id_number"]
-            this_page_item_ids.append(str(item_id))
-        except TypeError, err:
-            continue
-            logging.error("No data recieved for this submission on the page! Skipping that submission. "+str(counter))
-            logging.error(repr(item_dict))
-            logging.error(raw_json)
-            logging.exception(err)
-    return this_page_item_ids
-
-
-def search_for_tag(settings,search_tag):
-    """Perform search for a tag on derpibooru.
-    Return a lost of found submission IDs"""
-    assert_is_string(search_tag)
-    logging.debug("Starting search for tag: "+search_tag)
-    page_counter = 0 # Init counter
-    max_pages = 5000 # Saftey limit
-    found_submissions = []
-    last_page_items = []
-    while page_counter <= max_pages:
-        # Incriment page counter
-        page_counter += 1
-        logging.debug("Scanning page "+str(page_counter)+" for tag: "+search_tag)
-        # Generate page URL
-        tag_url = "https://derpibooru.org/tags/"+search_tag+".json?page="+str(page_counter)+"&key="+settings.api_key+"&nocomments=1&nofave=1"
-        # Retry if error loading search page
-        attempt_counter = 0
-        while attempt_counter < settings.sft_max_attempts:
-            attempt_counter += 1
-            try:
-                # Load page
-                search_page = get(tag_url)
-                if not search_page:
-                    logging.error("No page recieved on attempt "+str(attempt_counter))
-                    continue
-                # process aliased tag if tag is a redirect
-                redirect_tag = detect_redirect_page(search_page)
-                if redirect_tag:
-                    logging.info("Tag was an alias, processing aliased tag instead")
-                    return search_for_tag(settings, redirect_tag)
-                # Convert JSON to dict
-                search_page_dict = decode_json(search_page)
-                if json_dict is None:
-                    continue
-                # Extract submission_ids from page
-                this_page_item_ids= parse_tag_results_page(search_page_dict)
-                break
-            except ValueError, err:
-                # Catch errors from bad json data
-                logging.error("ValueError while scanning tag listing on attempt "+str(attempt_counter))
-                logging.exception(err)
-                continue
-        if attempt_counter >= settings.sft_max_attempts:
-            logging.error("Maximum attempts reached when scanning tag! Exiting to provide notice of problem")
-            sys.exit()
-        # Test if submissions seen are duplicates
-        if this_page_item_ids == last_page_items:
-            logging.debug("This pages items match the last pages, stopping search.")
-            break
-        last_page_items = this_page_item_ids
-        # Append this pages item ids to main list
-        found_submissions += this_page_item_ids
-    # Return found items
-    return found_submissions
 
 
 def check_if_deleted_submission(json_dict):
@@ -923,27 +841,28 @@ def download_this_weeks_submissions(settings):
 def download_everything(settings):
     """Start downloading everything or resume downloading everything"""
     logging.info("Downloading everything by range")
+    # Start downloading everything
+    latest_submission_id = get_latest_submission_id(settings)
+    start_number = 0
+    finish_number = latest_submission + 1000 # Add a thousand to account for new submissions added during run
+    if settings.go_backwards_when_using_sequentially_download_everything:
+        # Swap start and finish numbers for backwards mode
+        start_number, finish_number =  finish_number, start_number
+    download_range(settings,start_number,finish_number)
+    return
+
+
+def resume_range_download(settings):
     # Look for pickle of range to iterate over
     if os.path.exists(settings.pointer_file_path):
-        # Resume
-        logging.debug("Resuming from pickle")
+        logging.info("Resuming range from pickle")
         # Read pickle:
         resume_dict = read_pickle(settings.pointer_file_path)
         start_number = resume_dict["start_number"]
         finish_number = resume_dict["finish_number"]
         # Iterate over range
         download_range(settings,start_number,finish_number)
-        return
-    else:
-        # Start downloading everything
-        latest_submission_id = get_latest_submission_id(settings)
-        start_number = 0
-        finish_number = latest_submission + 1000 # Add a thousand to account for new submissions added during run
-        if settings.go_backwards_when_using_sequentially_download_everything:
-            # Swap start and finish numbers for backwards mode
-            start_number, finish_number =  finish_number, start_number
-        download_range(settings,start_number,finish_number)
-        return
+    return
 
 
 def download_range(settings,start_number,finish_number):
@@ -963,7 +882,7 @@ def download_range(settings,start_number,finish_number):
     # Iterate over range of id numbers
     submission_pointer = start_number
     loop_counter = 0
-    while (submission_pointer != (finish_number) ):
+    while (loop_counter <= total_submissions_to_attempt ):
         loop_counter += 1
         assert(submission_pointer >= 0)# First submission is ID 0
         assert(submission_pointer <= 1000000)# less than 1 million, 634,101 submissions as of 23-5-2014
@@ -982,36 +901,6 @@ def download_range(settings,start_number,finish_number):
             submission_pointer += 1
     # Clean up once everything is done
     clear_pointer_file(settings)
-    return
-
-
-
-def process_tag(settings,search_tag):
-    """Download submissions for a tag on derpibooru"""
-    assert_is_string(search_tag)
-    #logging.info("Processing tag: "+search_tag)
-    # Run search for tag
-    submission_ids = search_for_tag(settings, search_tag)
-    #Save data for resuming
-    if len(submission_ids) > 0:
-        save_resume_file(settings,search_tag,submission_ids)
-    # Download all found items
-    download_submission_id_list(settings,submission_ids,search_tag)
-    # Clear temp data
-    clear_resume_file(settings)
-    return
-
-
-def download_tags(settings,tag_list):
-    # API for this is depricated!
-    for search_tag in tag_list:
-        # remove invalid items
-        if not re.search("[^\d]",search_tag):
-            logging.debug("Only digits! skipping.")
-            continue
-        logging.info("Now processing tag "":"+search_tag)
-        process_tag(settings, search_tag)
-        append_list(search_tag, settings.done_list_path)
     return
 
 
@@ -1086,7 +975,7 @@ def main():
         logging.warning("No API key set, weird things may happen.")
     # Load tag list
     raw_input_list = import_list(settings.input_list_path)
-    #fix input list
+    # Fix input list
     input_list = convert_tag_list_to_search_string_list(settings,raw_input_list)
     #submission_list = import_list("config\\derpibooru_dl_submission_id_list.txt")
     # DEBUG
@@ -1098,7 +987,7 @@ def main():
     #print ""
     #return
     # /DEBUG
-    # Handle resuming
+    # Handle resuming query download operations
     resumed_query = resume_downloads(settings)
     if resumed_query is not False:
         # Skip everything before and including resumed tag
@@ -1106,19 +995,22 @@ def main():
         #logging.debug(str(tag_list))
         input_list = input_list[( input_list.index(resumed_query) + 1 ):]
         #logging.debug(str(input_list))
+    # Resume range operations
+    resume_range_download(settings)
+    # Begin new download operations
+    # Ordered based on expected time to complete operations.
     # Download individual submissions
     if settings.download_submission_ids_list:
         download_ids(settings,input_list,"from_list")
-    # Process each submission_id on tag list
-    if settings.download_tags_list:
-        download_tags(settings,input_list)
+    # Download last week mode (~7,000 items)
+    if settings.download_last_week:
+        download_this_weeks_submissions(settings)
     # Process each search query
     if settings.download_query_list:
         download_query_list(settings,input_list)
+    # Download evrything mode
     if settings.sequentially_download_everything:
         download_everything(settings)
-    if settings.download_last_week:
-        download_this_weeks_submissions(settings)
     return
 
 
