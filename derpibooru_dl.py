@@ -676,7 +676,6 @@ def download_submission(settings,search_query,submission_id):
         # Convert JSON to dict
         json_dict = decode_json(json_page)
         if json_dict is None:
-            time.sleep(10)
             continue
         # Check if submission is deleted
         if check_if_deleted_submission(json_dict):
