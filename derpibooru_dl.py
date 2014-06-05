@@ -95,10 +95,13 @@ def get(url):
     assert_is_string(url)
     deescaped_url = deescape(url)
     url_with_protocol = add_http(deescaped_url)
+    #logging.debug( "getting url ", locals())
     gettuple = getwithinfo(url_with_protocol)
     if gettuple:
         reply, info = gettuple
         return reply
+    else:
+        return
 
 
 def getwithinfo(url):
@@ -487,7 +490,7 @@ def load_search_page(settings,search_url):
             logging.error( locals() )
             continue
         page_keys = search_page_dict.keys()
-        logging.debug(page_keys)
+        #logging.debug(page_keys)
         first_key = page_keys[0]
         search_page_list = search_page_dict[first_key]
         #print search_page_list
@@ -564,10 +567,10 @@ def check_if_deleted_submission(json_dict):
     """Check whether the JSON Dict for a submission shows it as being deleted"""
     keys = json_dict.keys()
     if "deletion_reason" in keys:
-        logging.error("Deleted submission! Reason: "+str(json_dict["deletion_reason"]))
+        logging.error("Deleted submission! Reason: "+repr(json_dict["deletion_reason"]))
         return True
     elif "duplicate_of" in keys:
-        logging.error("Deleted duplicate submission! Reason: "+str(json_dict["duplicate_of"]))
+        logging.error("Deleted duplicate submission! Reason: "+repr(json_dict["duplicate_of"]))
         return True
     else:
         return False
@@ -583,7 +586,9 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
     # Generate search pattern
     glob_string = os.path.join(settings.output_folder, "*", expected_submission_filename)
     # Use glob to check for existing files matching the expected pattern
+    logging.debug("CALLING glob.glob, local vars: "+ str(locals()))
     glob_matches = glob.glob(glob_string)
+    logging.debug("CALLED glob.glob, locals: "+str(locals()))
     # Check if any matches, if no matches then return False
     if len(glob_matches) == 0:
         return False
@@ -658,8 +663,10 @@ def download_submission(settings,search_query,submission_id):
         # Option to save to a single combined folder
         output_folder = os.path.join(settings.output_folder,settings.combined_download_folder_name)
     # Check for dupliactes in download folder
+    logging.debug("CALLING DUPLICATE CHECK")
     if copy_over_if_duplicate(settings, submission_id, output_folder):
         return
+    logging.debug("DONE DUPLICATE CHECK")
     # Option to skip loading remote submission files
     if settings.skip_downloads is True:
         return
@@ -669,6 +676,8 @@ def download_submission(settings,search_query,submission_id):
     download_attempt_counter = 0
     while download_attempt_counter <= settings.max_download_attempts:
         download_attempt_counter += 1
+        if download_attempt_counter > 1:
+            logging.debug("Attempt "+str(download_attempt_counter))
         # Load JSON URL
         json_page = get(json_url)
         if not json_page:
@@ -819,10 +828,12 @@ def clear_pointer_file(settings):
 
 def get_latest_submission_id(settings):
     """Find the most recent submissions ID"""
+    logging.debug("Getting ID of most recent submission...")
     search_url = "https://derpibooru.org/images.json?key="+settings.api_key+"&nocomments=1&nofave=1"
     latest_submissions = load_search_page(settings,search_url)
     ordered_latest_submissions = sorted(latest_submissions)
     latest_submission_id = int(ordered_latest_submissions[0])
+    logging.debug("Most recent submission ID:"+str(latest_submission_id))
     return latest_submission_id
 
 
