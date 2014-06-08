@@ -301,6 +301,7 @@ class config_handler():
         self.sequentially_download_everything = False # download submission 1,2,3...
         self.go_backwards_when_using_sequentially_download_everything = False # when downloading everything in range mode should we go 10,9,8,7...?
         self.download_last_week = False # Download (approximately) the last weeks submissions
+        self.skip_glob_duplicate_check = False # Skip glob.glob based duplicate check (only check if output file exists instead of scanning all output paths)
 
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
@@ -375,6 +376,10 @@ class config_handler():
             self.download_last_week = config.getboolean('Settings', 'download_last_week')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.skip_glob_duplicate_check = config.getboolean('Settings', 'skip_glob_duplicate_check')
+        except ConfigParser.NoOptionError:
+            pass
         return
 
     def save_settings(self,settings_path):
@@ -395,6 +400,7 @@ class config_handler():
         config.set('Settings', 'sequentially_download_everything', str(self.sequentially_download_everything) )
         config.set('Settings', 'go_backwards_when_using_sequentially_download_everything', str(self.go_backwards_when_using_sequentially_download_everything) )
         config.set('Settings', 'download_last_week', str(self.download_last_week) )
+        config.set('Settings', 'skip_glob_duplicate_check', str(self.skip_glob_duplicate_check) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
@@ -581,6 +587,9 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
     If there is, copy the existing version to the suppplied output location then return True
     If no copy can be found, return False"""
     assert_is_string(submission_id)
+    # Setting to override this function for speed optimisation on single folder output
+    if settings.skip_glob_duplicate_check:
+        return False
     # Generate expected filename pattern
     expected_submission_filename = "*"+submission_id+".*"
     # Generate search pattern
@@ -663,10 +672,8 @@ def download_submission(settings,search_query,submission_id):
         # Option to save to a single combined folder
         output_folder = os.path.join(settings.output_folder,settings.combined_download_folder_name)
     # Check for dupliactes in download folder
-    logging.debug("CALLING DUPLICATE CHECK")
     if copy_over_if_duplicate(settings, submission_id, output_folder):
         return
-    logging.debug("DONE DUPLICATE CHECK")
     # Option to skip loading remote submission files
     if settings.skip_downloads is True:
         return
