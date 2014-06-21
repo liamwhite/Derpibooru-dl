@@ -862,7 +862,7 @@ def download_everything(settings):
     # Start downloading everything
     latest_submission_id = get_latest_submission_id(settings)
     start_number = 0
-    finish_number = latest_submission_id + 1000 # Add a thousand to account for new submissions added during run
+    finish_number = latest_submission_id + 50000 # Add 50,000 to account for new submissions added during run
     if settings.go_backwards_when_using_sequentially_download_everything:
         # Swap start and finish numbers for backwards mode
         start_number, finish_number =  finish_number, start_number
