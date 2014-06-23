@@ -114,6 +114,7 @@ def getwithinfo(url):
     while attemptcount < GET_MAX_ATTEMPTS:
         attemptcount = attemptcount + 1
         if attemptcount > 1:
+            delay(GET_RETRY_DELAY)
             logging.debug( "Attempt " + str(attemptcount) + " for URL: " + url )
         try:
             save_file("debug\\get_last_url.txt", url, True)
@@ -167,7 +168,6 @@ def getwithinfo(url):
             logging.debug(str( type(err) ) )
             logging.debug(str(err))
             continue
-        delay(GET_RETRY_DELAY)
     return
 
 
@@ -278,9 +278,12 @@ def append_list(lines,list_file_path="weasyl_done_list.txt",initial_text="# List
 
 class config_handler():
     def __init__(self,settings_path="derpibooru_dl_config.cfg"):
+        # Setup settings
         self.set_defaults()
         self.load_file(settings_path)
         self.save_settings(settings_path)
+        # Setup vars
+        self.load_deleted_submission_list()# list of submissions that are known to have been deleted
         return
 
     def set_defaults(self):
@@ -311,6 +314,8 @@ class config_handler():
         self.max_search_page_retries = 10 # maximum retries for a search page
         self.combined_download_folder_name = "combined_downloads"# Name of subfolder to use when saving to only one folder
         self.max_download_attempts = 10 # Number of times to retry a download before skipping
+        self.skip_known_deleted = True # Skip submissions of the list of known deleted IDs
+        self.deleted_submissions_list_path = "config\\deleted_submissions.txt"
         return
 
     def load_file(self,settings_path):
@@ -403,6 +408,17 @@ class config_handler():
         config.set('Settings', 'skip_glob_duplicate_check', str(self.skip_glob_duplicate_check) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
+        return
+
+    def load_deleted_submission_list(self):
+        """Load a list of known bad IDs from a file"""
+        self.deleted_submissions_list = import_list(listfilename=self.deleted_submissions_list_path)
+        return self.deleted_submissions_list
+
+    def update_deleted_submission_list(self,submission_id):
+        """Add a bad ID to the list in both ram and disk"""
+        self.deleted_submissions_list.append(submission_id)
+        append_list(submission_id, list_file_path=self.deleted_submissions_list_path, initial_text="# List of deleted IDs.\n", overwrite=False)
         return
 
 
@@ -677,6 +693,10 @@ def download_submission(settings,search_query,submission_id):
     # Option to skip loading remote submission files
     if settings.skip_downloads is True:
         return
+    # Option to skip previously encountered deleted submissions
+    if settings.skip_known_deleted:
+        if submission_id in settings.deleted_submissions_list:
+            return
     # Build JSON URL
     json_url = "https://derpibooru.org/"+submission_id+".json?key="+settings.api_key
     # Retry if needed
@@ -697,6 +717,7 @@ def download_submission(settings,search_query,submission_id):
         if check_if_deleted_submission(json_dict):
             logging.debug("Submission was deleted.")
             logging.debug(json_page)
+            settings.update_deleted_submission_list(submission_id)
             return
         # Extract needed info from JSON
         image_url = json_dict["image"]
