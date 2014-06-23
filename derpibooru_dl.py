@@ -33,8 +33,8 @@ import socket
 
 # getwithinfo()
 GET_REQUEST_DELAY = 0
-GET_RETRY_DELAY = 30
-GET_MAX_ATTEMPTS = 20
+GET_RETRY_DELAY = 30# [19:50] <@CloverTheClever> Ctrl-S: if your downloader gets a connection error, sleep 10 and increase delay between attempts by a second
+GET_MAX_ATTEMPTS = 10
 
 
 
@@ -168,7 +168,8 @@ def getwithinfo(url):
             logging.debug(str( type(err) ) )
             logging.debug(str(err))
             continue
-    return
+    sys.exit()# [19:51] <@CloverTheClever> if it does it more than 10 times, quit/throw an exception upstream
+
 
 
 def save_file(filenamein,data,force_save=False):
