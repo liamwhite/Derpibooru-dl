@@ -278,15 +278,16 @@ def append_list(lines,list_file_path="weasyl_done_list.txt",initial_text="# List
 
 class config_handler():
     def __init__(self,settings_path="derpibooru_dl_config.cfg"):
-        # Setup settings
+        # Setup settings, these are static
         self.set_defaults()
         self.load_file(settings_path)
         self.save_settings(settings_path)
-        # Setup vars
+        # Setup things that can change during program use
         self.load_deleted_submission_list()# list of submissions that are known to have been deleted
         return
 
     def set_defaults(self):
+        """Set the defaults for settings, these will be overridden by settings from a file"""
         # Login
         self.api_key = ""
 
@@ -305,6 +306,8 @@ class config_handler():
         self.go_backwards_when_using_sequentially_download_everything = False # when downloading everything in range mode should we go 10,9,8,7...?
         self.download_last_week = False # Download (approximately) the last weeks submissions
         self.skip_glob_duplicate_check = False # Skip glob.glob based duplicate check (only check if output file exists instead of scanning all output paths)
+        self.skip_known_deleted = True # Skip submissions of the list of known deleted IDs
+        self.deleted_submissions_list_path = "config\\deleted_submissions.txt"
 
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
@@ -314,11 +317,10 @@ class config_handler():
         self.max_search_page_retries = 10 # maximum retries for a search page
         self.combined_download_folder_name = "combined_downloads"# Name of subfolder to use when saving to only one folder
         self.max_download_attempts = 10 # Number of times to retry a download before skipping
-        self.skip_known_deleted = True # Skip submissions of the list of known deleted IDs
-        self.deleted_submissions_list_path = "config\\deleted_submissions.txt"
         return
 
     def load_file(self,settings_path):
+        """Load settings from a file"""
         config = ConfigParser.RawConfigParser()
         if not os.path.exists(settings_path):
             return
@@ -385,9 +387,18 @@ class config_handler():
             self.skip_glob_duplicate_check = config.getboolean('Settings', 'skip_glob_duplicate_check')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.skip_known_deleted = config.getboolean('Settings', 'skip_known_deleted')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.deleted_submissions_list_path = config.get('Settings', 'deleted_submissions_list_path')
+        except ConfigParser.NoOptionError:
+            pass
         return
 
     def save_settings(self,settings_path):
+        """Save settings to a file"""
         config = ConfigParser.RawConfigParser()
         config.add_section('Login')
         config.set('Login', 'api_key', self.api_key )
@@ -406,6 +417,8 @@ class config_handler():
         config.set('Settings', 'go_backwards_when_using_sequentially_download_everything', str(self.go_backwards_when_using_sequentially_download_everything) )
         config.set('Settings', 'download_last_week', str(self.download_last_week) )
         config.set('Settings', 'skip_glob_duplicate_check', str(self.skip_glob_duplicate_check) )
+        config.set('Settings', 'skip_known_deleted', str(self.skip_known_deleted) )
+        config.set('Settings', 'deleted_submissions_list_path', str(self.deleted_submissions_list_path) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
