@@ -44,3 +44,5 @@ sequentially_download_everything = Should the range download mode try to save ev
 go_backwards_when_using_sequentially_download_everything = Start at the most recent submission instead of the oldest when trying to download everything.
 download_last_week = Should the last 7000 submissions be downloaded (Approx 1 weeks worth)
 skip_glob_duplicate_check = You should probably not use this unless you know what you are doing. (Speedhack for use with single output folder)
+skip_known_deleted = Should previously encounterd deleted submissions be skipped?
+deleted_submissions_list_path = Relative path to put list of known deleted submissions
