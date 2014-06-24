@@ -761,6 +761,8 @@ def download_submission(settings,search_query,submission_id):
         save_file(json_output_path, json_page, True)
         logging.debug("Download successful")
         return
+    logging.error("Too many retries, skipping this submission.")
+    logging.debug(locals())
     return
 
 
