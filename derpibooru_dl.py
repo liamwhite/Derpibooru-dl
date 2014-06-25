@@ -1024,7 +1024,7 @@ def convert_query_for_path(settings,query):
     return dots_fixed
 
 
-def verify_output_folder(settings,target_folder):
+def verify_folder(settings,target_folder):
     """Compare ID number and SHA512 hashes from submission JSON against their submission files,
      moving those that don't match to another folder"""
     logging.info("Verifying "+target_folder)
@@ -1058,12 +1058,16 @@ def verify_saved_submission(settings,target_file_path):
     target_folder = os.path.dirname(target_file_path)
     submission_filename = settings.filename_prefix+submission_id+".*"
     submission_path = os.path.join(target_folder, submission_filename)
+    submission_fail_path = os.path.join(target_folder, submission_filename)
     json_filename = submission_id+".json"
-    json_path = os.path.join(target_folder, json_filename)
+    json_path = os.path.join(target_folder, "json", json_filename)
+    json_fail_path = os.path.join(settings.verification_fail_output_path, "json", json_filename)
     json_string = read_file(json_path)
     decoded_json = decode_json(json_string)
+
     # Test the data
     failed_test = False
+
     # Does the JSON provided hash match the image?
     json_hash = decoded_json["sha512_hash"]
     file_data = read_file(submission_path)
@@ -1091,10 +1095,8 @@ def verify_saved_submission(settings,target_file_path):
         logging.error("Verification FAIL: "+target_file_path)
         logging.info("Moving sumbission and metadata to "+settings.verification_fail_output_path)
         try:
-            # Move submission file
-            shutil.move(image_input_filepath, image_output_path)
-            # Move JSON
-            shutil.move(json_input_filepath, json_output_path)
+            shutil.move(submission_path, submission_fail_path)
+            shutil.move(json_path, json_fail_path)
             return
         except IOError, err:
             logging.error("Error copying files!")
