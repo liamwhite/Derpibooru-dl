@@ -1028,18 +1028,32 @@ def verify_output_folder(settings,target_folder):
     """Compare ID number and SHA512 hashes from submission JSON against their submission files,
      moving those that don't match to another folder"""
     logging.info("Verifying "+target_folder)
-    # Generate JSON glob string
-    submission_glob_string = os.path.join(target_folder,settings.filename_prefix+"*") # foo/bar/derpi_1234.baz
-    # list json files
-    submission_files_list = glob.glob(submission_glob_string)
-    for submission_file_path in submission_files_list:
-        verify_saved_submission(settings,target_file_path)
+    files_list = walk_for_file_paths(target_folder)
+    for file_path in files_list:
+        verify_saved_submission(settings,file_path)
     logging.info("Finished verification for "+target_folder)
     return
 
 
+def walk_for_file_paths(start_path):
+    """Use os.walk to collect a list of paths to files mathcing input parameters.
+    Takes in a starting path and a list of patterns to check against filenames
+    Patterns follow fnmatch conventions."""
+    logging.debug("Starting walk. start_path:" + start_path)
+    assert(type(start_path) == type(""))
+    assert(type(pattern_list) == type([]))
+    matches = []
+    for root, dirs, files in os.walk(start_path):
+        for filename in files:
+            match = os.path.join(root,filename)
+            matches.append(match)
+    logging.debug("Finished walk.")
+    return matches
+
+
 def verify_saved_submission(settings,target_file_path):
     """Compare ID number SHA512 hash from a submissions JSON with the submission file and move if not matching"""
+    # http://www.pythoncentral.io/hashing-strings-with-python/
     submission_id = find_id_from_filename(settings, target_file_path)
     target_folder = os.path.dirname(target_file_path)
     submission_filename = settings.filename_prefix+submission_id+".*"
