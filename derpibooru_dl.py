@@ -27,7 +27,7 @@ import json
 import shutil
 import pickle
 import socket
-
+import hashlib
 
 
 
@@ -318,6 +318,7 @@ class config_handler():
         self.max_search_page_retries = 10 # maximum retries for a search page
         self.combined_download_folder_name = "combined_downloads"# Name of subfolder to use when saving to only one folder
         self.max_download_attempts = 10 # Number of times to retry a download before skipping
+        self.verification_fail_output_path = "failed_verification"
         return
 
     def load_file(self,settings_path):
@@ -621,7 +622,7 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
     if settings.skip_glob_duplicate_check:
         return False
     # Generate expected filename pattern
-    expected_submission_filename = "*"+submission_id+".*"
+    expected_submission_filename = settings.filename_prefix+submission_id+".*"
     # Generate search pattern
     glob_string = os.path.join(settings.output_folder, "*", expected_submission_filename)
     # Use glob to check for existing files matching the expected pattern
@@ -1021,6 +1022,87 @@ def convert_query_for_path(settings,query):
     dashes_fixed = colons_fixed.replace("-", "-dash-")
     dots_fixed = dashes_fixed.replace(".", "-dot-")
     return dots_fixed
+
+
+def verify_output_folder(settings,target_folder):
+    """Compare ID number and SHA512 hashes from submission JSON against their submission files,
+     moving those that don't match to another folder"""
+    logging.info("Verifying "+target_folder)
+    # Generate JSON glob string
+    submission_glob_string = os.path.join(target_folder,settings.filename_prefix+"*") # foo/bar/derpi_1234.baz
+    # list json files
+    submission_files_list = glob.glob(submission_glob_string)
+    for submission_file_path in submission_files_list:
+        verify_saved_submission(settings,target_file_path)
+    logging.info("Finished verification for "+target_folder)
+    return
+
+
+def verify_saved_submission(settings,target_file_path):
+    """Compare ID number SHA512 hash from a submissions JSON with the submission file and move if not matching"""
+    submission_id = find_id_from_filename(settings, target_file_path)
+    target_folder = os.path.dirname(target_file_path)
+    submission_filename = settings.filename_prefix+submission_id+".*"
+    submission_path = os.path.join(target_folder, submission_filename)
+    json_filename = submission_id+".json"
+    json_path = os.path.join(target_folder, json_filename)
+    json_string = read_file(json_path)
+    decoded_json = decode_json(json_string)
+    # Test the data
+    failed_test = False
+    # Does the JSON provided hash match the image?
+    json_hash = decoded_json["sha512_hash"]
+    file_data = read_file(submission_path)
+    hash_object = hashlib.sha512(file_data)
+    file_hash = hash_object.hexdigest()
+    if json_hash == file_hash:
+        logging.error("Image hash did not match JSON "+submission_path)
+        failed_test = True
+
+    # Does the ID from the JSON match the image and JSON filenames?
+    id_from_json = decoded_json["id_number"]
+    # Image filename
+    id_from_image_filename = find_id_from_filename(settings, submission_path)
+    if id_from_json != id_from_image_filename:
+        logging.error("Image filename did not match JSON ID "+submission_path)
+        failed_test = True
+    # JSON filename
+    id_from_json_filename = find_id_from_filename(settings, json_path)
+    if id_from_json != id_from_json_filename:
+        logging.error("JSON filename did not match JSON ID "+json_path)
+        failed_test = True
+
+    if failed_test is True:
+        # Move if any test was failed
+        logging.error("Verification FAIL: "+target_file_path)
+        logging.info("Moving sumbission and metadata to "+settings.verification_fail_output_path)
+        try:
+            # Move submission file
+            shutil.move(image_input_filepath, image_output_path)
+            # Move JSON
+            shutil.move(json_input_filepath, json_output_path)
+            return
+        except IOError, err:
+            logging.error("Error copying files!")
+            logging.exception(err)
+            return
+    else:
+        logging.debug("Verification PASS: "+target_file_path)
+        return
+
+
+def find_id_from_filename(settings, file_path):
+    """Extract submission ID from a file path or filename"""
+    filename = os.path.basename(file_path)
+    if filename[-5:].lower() == ".json".lower():# If the path ends in .json
+        submission_id = filename[:-5]
+        return submission_id
+    else: # Not JSON
+        id_and_ext = filename.split(settings.filename_prefix)[-1]# Remove all but ID and extention
+        submission_id = id_and_ext.split(".")[0]#Remove extention
+        return submission_id
+
+
 
 
 def main():
