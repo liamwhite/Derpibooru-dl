@@ -16,7 +16,7 @@ from derpibooru_dl import *
 def main():
     # Load settings
     settings = config_handler("config\\derpibooru_dl_config.cfg")
-    verify_folder(settings.output_folder)
+    verify_folder(settings, settings.output_folder)
 
 if __name__ == '__main__':
     # Setup logging
