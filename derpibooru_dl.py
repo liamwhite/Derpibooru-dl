@@ -1070,9 +1070,15 @@ def verify_saved_submission(settings,target_file_path):
 
     # Does the JSON provided hash match the image?
     json_hash = decoded_json["sha512_hash"]
-    file_data = read_file(submission_path)
-    hash_object = hashlib.sha512(file_data)
-    file_hash = hash_object.hexdigest()
+    # http://www.pythoncentral.io/hashing-files-with-python/
+    BLOCKSIZE = 65536
+    hasher = hashlib.sha512()
+    with open(submission_path, 'rb') as afile:
+        buf = afile.read(BLOCKSIZE)
+        while len(buf) > 0:
+            hasher.update(buf)
+            buf = afile.read(BLOCKSIZE)
+    file_hash = hasher.hexdigest()
     if json_hash == file_hash:
         logging.error("Image hash did not match JSON "+submission_path)
         failed_test = True
