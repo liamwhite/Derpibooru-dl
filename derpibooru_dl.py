@@ -1060,7 +1060,11 @@ def walk_for_file_paths(start_path):
     assert(type(start_path) == type(""))
     matches = []
     for root, dirs, files in os.walk(start_path):
+        c = 1
         for filename in files:
+            c += 1
+            if (c % 1000) == 0:
+                logging.debug("File # "+str(c)+": "+filename)
             match = os.path.join(root,filename)
             matches.append(match)
     logging.debug("Finished walk.")
