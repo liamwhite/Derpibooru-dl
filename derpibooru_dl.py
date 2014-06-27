@@ -76,7 +76,7 @@ def add_http(url):
             output_url = "http:"+url
             return output_url
         else:
-            logging.error(str(locals()))
+            logging.error(repr(locals()))
             raise ValueError
 
 
@@ -309,6 +309,7 @@ class config_handler():
         self.skip_glob_duplicate_check = False # Skip glob.glob based duplicate check (only check if output file exists instead of scanning all output paths)
         self.skip_known_deleted = True # Skip submissions of the list of known deleted IDs
         self.deleted_submissions_list_path = "config\\deleted_submissions.txt"
+        self.move_on_fail_verification = False # Should files be moved if verification of a submission fails?
 
         # Internal variables, these are set through this code only
         self.resume_file_path = "config\\resume.pkl"
@@ -397,6 +398,10 @@ class config_handler():
             self.deleted_submissions_list_path = config.get('Settings', 'deleted_submissions_list_path')
         except ConfigParser.NoOptionError:
             pass
+        try:
+            self.move_on_fail_verification = config.getboolean('Settings', 'move_on_fail_verification')
+        except ConfigParser.NoOptionError:
+            pass
         return
 
     def save_settings(self,settings_path):
@@ -421,6 +426,7 @@ class config_handler():
         config.set('Settings', 'skip_glob_duplicate_check', str(self.skip_glob_duplicate_check) )
         config.set('Settings', 'skip_known_deleted', str(self.skip_known_deleted) )
         config.set('Settings', 'deleted_submissions_list_path', str(self.deleted_submissions_list_path) )
+        config.set('Settings', 'move_on_fail_verification', str(self.move_on_fail_verification) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
@@ -442,7 +448,7 @@ def assert_is_string(object_to_test):
     """Make sure input is either a string or a unicode string"""
     if( (type(object_to_test) == type("")) or (type(object_to_test) == type(u"")) ):
         return
-    logging.critical(str(locals()))
+    logging.critical(repr(locals()))
     raise(ValueError)
 
 
@@ -467,11 +473,11 @@ def decode_json(json_string):
                 logging.debug(json_string)
                 return
             else:
-                logging.critical(locals())
+                logging.critical(repr(locals()))
                 raise(err)
         # Log locals and crash if unknown issue
         else:
-            logging.critical(locals())
+            logging.critical(repr(locals()))
             raise(err)
 
 
@@ -516,7 +522,7 @@ def load_search_page(settings,search_url):
         #print search_page
         if len(search_page) < 5:
             logging.debug("Search page is very small!")
-            logging.debug( locals() )
+            logging.debug( repr(locals()) )
         # Extract submission_ids from page
         # Convert JSON to dict
         assert_is_string(search_page)
@@ -524,7 +530,7 @@ def load_search_page(settings,search_url):
             search_page_dict = json.loads(search_page)
         except ValueError, err:
             logging.error("Failed to read JSON on attempt "+str(attempt_counter)+"for url"+search_url)
-            logging.error( locals() )
+            logging.error( repr(locals()) )
             continue
         page_keys = search_page_dict.keys()
         #logging.debug(page_keys)
@@ -542,7 +548,7 @@ def load_search_page(settings,search_url):
                 this_page_item_ids.append(str(item_id))
         except TypeError, err:
             logging.error( str( type(err ) ) )
-            logging.error( locals() )
+            logging.error( repr(locals()) )
             logging.debug("saving local variables to pickle")
             save_pickle("debug\\locals.pickle",locals())
             logging.exception(err)
@@ -626,9 +632,9 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
     # Generate search pattern
     glob_string = os.path.join(settings.output_folder, "*", expected_submission_filename)
     # Use glob to check for existing files matching the expected pattern
-    logging.debug("CALLING glob.glob, local vars: "+ str(locals()))
+    logging.debug("CALLING glob.glob, local vars: "+ repr(locals()))
     glob_matches = glob.glob(glob_string)
-    logging.debug("CALLED glob.glob, locals: "+str(locals()))
+    logging.debug("CALLED glob.glob, locals: "+repr(locals()))
     # Check if any matches, if no matches then return False
     if len(glob_matches) == 0:
         return False
@@ -763,7 +769,7 @@ def download_submission(settings,search_query,submission_id):
         logging.debug("Download successful")
         return
     logging.error("Too many retries, skipping this submission.")
-    logging.debug(locals())
+    logging.debug(repr(locals()))
     return
 
 
@@ -1029,9 +1035,20 @@ def verify_folder(settings,target_folder):
      moving those that don't match to another folder"""
     logging.info("Verifying "+target_folder)
     files_list = walk_for_file_paths(target_folder)
+    if len(files_list) < 1:
+        logging.error("No files to verify!")
+        return
+    counter = 0
+    pass_count = 0
+    fail_count = 0
     for file_path in files_list:
-        verify_saved_submission(settings,file_path)
-    logging.info("Finished verification for "+target_folder)
+        counter += 1
+        logging.info("Verifying submission "+str(counter)+" of "+str(len(files_list))+" "+file_path)
+        if verify_saved_submission(settings,file_path):
+            pass_count += 1
+        else:
+            fail_count += 1
+    logging.info("Finished verification with "+str(pass_count)+" PASSED and "+str(fail_count)+" FAILED for "+target_folder)
     return
 
 
@@ -1041,7 +1058,6 @@ def walk_for_file_paths(start_path):
     Patterns follow fnmatch conventions."""
     logging.debug("Starting walk. start_path:" + start_path)
     assert(type(start_path) == type(""))
-    assert(type(pattern_list) == type([]))
     matches = []
     for root, dirs, files in os.walk(start_path):
         for filename in files:
@@ -1052,21 +1068,51 @@ def walk_for_file_paths(start_path):
 
 
 def verify_saved_submission(settings,target_file_path):
-    """Compare ID number SHA512 hash from a submissions JSON with the submission file and move if not matching"""
+    """Compare ID number SHA512 hash from a submissions JSON with the submission file and move if not matching
+    return True if pass, False if fail"""
     # http://www.pythoncentral.io/hashing-strings-with-python/
+    failed_test = False
+    # Generate filenames and paths
+    # Find out if we were given a JSON file
+    if target_file_path[-5:].lower() == ".json".lower():
+        # We were given a JSON file, so convert the folder to the submission one
+        json_folder = os.path.dirname(target_file_path)
+        target_folder = os.path.dirname(json_folder)
+    else:
+        # Not a JSON file, use the folder we are in
+        target_folder = os.path.dirname(target_file_path)
     submission_id = find_id_from_filename(settings, target_file_path)
-    target_folder = os.path.dirname(target_file_path)
-    submission_filename = settings.filename_prefix+submission_id+".*"
-    submission_path = os.path.join(target_folder, submission_filename)
-    submission_fail_path = os.path.join(target_folder, submission_filename)
+    glob_submission_filename = settings.filename_prefix+submission_id+".*"
+    glob_submission_path = os.path.join(target_folder, glob_submission_filename)
+    # Use glob to find submission filename
+    glob_matches = glob.glob(glob_submission_path)
+    if len(glob_matches) != 1:
+        failed_test = True
+        if len(glob_matches) == 0:
+            # No matches, this means fthe file is missing.
+            logging.error("No submissions matched glob string!")
+            logging.debug(repr(locals()))
+            return False
+        else:
+            # More than one match, this should never happen.
+            logging.error("More than one submission matched glob string!")
+            logging.debug(repr(locals()))
+            raise(ValueError)
+    else:
+        # If there is a single glob match, get the filename.
+        assert(len(glob_matches) is 1)
+        submission_path = glob_matches[0]
+        submission_filename = os.path.basename(submission_path)
+    submission_fail_folder = settings.verification_fail_output_path
+    submission_fail_path = os.path.join(submission_fail_folder, submission_filename)
     json_filename = submission_id+".json"
     json_path = os.path.join(target_folder, "json", json_filename)
-    json_fail_path = os.path.join(settings.verification_fail_output_path, "json", json_filename)
+    json_fail_folder = os.path.join(settings.verification_fail_output_path, "json")
+    json_fail_path = os.path.join(json_fail_folder, json_filename)
     json_string = read_file(json_path)
     decoded_json = decode_json(json_string)
 
     # Test the data
-    failed_test = False
 
     # Does the JSON provided hash match the image?
     json_hash = decoded_json["sha512_hash"]
@@ -1078,17 +1124,20 @@ def verify_saved_submission(settings,target_file_path):
         while len(buf) > 0:
             hasher.update(buf)
             buf = afile.read(BLOCKSIZE)
-    file_hash = hasher.hexdigest()
-    if json_hash == file_hash:
+    file_hash = u"" + hasher.hexdigest()# convert to unicode
+    if json_hash != file_hash:
         logging.error("Image hash did not match JSON "+submission_path)
+        logging.debug(repr(file_hash))
+        logging.debug(repr(json_hash))
         failed_test = True
 
     # Does the ID from the JSON match the image and JSON filenames?
-    id_from_json = decoded_json["id_number"]
+    id_from_json = str(decoded_json["id_number"])
     # Image filename
     id_from_image_filename = find_id_from_filename(settings, submission_path)
     if id_from_json != id_from_image_filename:
-        logging.error("Image filename did not match JSON ID "+submission_path)
+        logging.error("Image filename did not match JSON ID for "+submission_path)
+        logging.debug(id_from_json+" vs "+id_from_image_filename)
         failed_test = True
     # JSON filename
     id_from_json_filename = find_id_from_filename(settings, json_path)
@@ -1099,18 +1148,28 @@ def verify_saved_submission(settings,target_file_path):
     if failed_test is True:
         # Move if any test was failed
         logging.error("Verification FAIL: "+target_file_path)
-        logging.info("Moving sumbission and metadata to "+settings.verification_fail_output_path)
-        try:
-            shutil.move(submission_path, submission_fail_path)
-            shutil.move(json_path, json_fail_path)
-            return
-        except IOError, err:
-            logging.error("Error copying files!")
-            logging.exception(err)
-            return
+        logging.debug(repr(locals()))
+        if settings.move_on_fail_verification:
+            logging.info("Moving sumbission and metadata to "+settings.verification_fail_output_path)
+            try:
+                # Move submission file
+                if os.path.exists(submission_path):
+                    if not os.path.exists(submission_fail_folder):
+                        os.makedirs(submission_fail_folder)
+                    shutil.move(submission_path, submission_fail_path)
+                # Move JSON file
+                if os.path.exists(json_path):
+                    if not os.path.exists(json_fail_folder):
+                        os.makedirs(json_fail_folder)
+                    shutil.move(json_path, json_fail_path)
+                return False
+            except IOError, err:
+                logging.error("Error copying files!")
+                logging.exception(err)
+                return False
     else:
-        logging.debug("Verification PASS: "+target_file_path)
-        return
+        logging.info("Verification PASS: "+target_file_path)
+        return True
 
 
 def find_id_from_filename(settings, file_path):

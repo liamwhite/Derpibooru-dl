@@ -27,8 +27,8 @@ if __name__ == '__main__':
         main()
     except Exception, err:
         # Log exceptions
-        logger.critical("Unhandled exception!")
-        logger.critical(str( type(err) ) )
+        logging.critical("Unhandled exception!")
+        logging.critical(str( type(err) ) )
         logging.exception(err)
     logging.info( "Program finished.")
     #raw_input("Press return to close")
