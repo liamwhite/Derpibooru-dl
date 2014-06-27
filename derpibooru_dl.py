@@ -1044,9 +1044,10 @@ def verify_folder(settings,target_folder):
     for file_path in files_list:
         counter += 1
         logging.info("Verifying submission "+str(counter)+" of "+str(len(files_list))+" "+file_path)
-        if verify_saved_submission(settings,file_path):
+        last_status = verify_saved_submission(settings,file_path)
+        if last_status is True:
             pass_count += 1
-        else:
+        elif last_status is False:
             fail_count += 1
     logging.info("Finished verification with "+str(pass_count)+" PASSED and "+str(fail_count)+" FAILED for "+target_folder)
     return
@@ -1060,13 +1061,16 @@ def walk_for_file_paths(start_path):
     assert(type(start_path) == type(""))
     matches = []
     for root, dirs, files in os.walk(start_path):
+        dirs[:] = [d for d in dirs if d not in ['json']]# Scanning /json/ is far too slow for large folders, skip it.
         c = 1
+        logging.debug("root: "+root)
         for filename in files:
             c += 1
             if (c % 1000) == 0:
                 logging.debug("File # "+str(c)+": "+filename)
             match = os.path.join(root,filename)
             matches.append(match)
+        logging.debug("end folder")
     logging.debug("Finished walk.")
     return matches
 
@@ -1117,6 +1121,14 @@ def verify_saved_submission(settings,target_file_path):
     decoded_json = decode_json(json_string)
 
     # Test the data
+    # If ID < 6000 or type is .svg, skip tests.
+    id_from_json = str(decoded_json["id_number"])
+    if int(id_from_json) < 6000:
+        logging.info("ID below 6000, skipping tests due to unreliable hash.")
+        return None
+    if submission_path[-4:].lower() == ".svg".lower():
+        logging.info("Extention is .svg, skipping tests due to unreliable hash.")
+        return None
 
     # Does the JSON provided hash match the image?
     json_hash = decoded_json["sha512_hash"]
@@ -1134,9 +1146,8 @@ def verify_saved_submission(settings,target_file_path):
         logging.debug(repr(file_hash))
         logging.debug(repr(json_hash))
         failed_test = True
-
     # Does the ID from the JSON match the image and JSON filenames?
-    id_from_json = str(decoded_json["id_number"])
+
     # Image filename
     id_from_image_filename = find_id_from_filename(settings, submission_path)
     if id_from_json != id_from_image_filename:
@@ -1148,7 +1159,7 @@ def verify_saved_submission(settings,target_file_path):
     if id_from_json != id_from_json_filename:
         logging.error("JSON filename did not match JSON ID "+json_path)
         failed_test = True
-
+    # End of tests
     if failed_test is True:
         # Move if any test was failed
         logging.error("Verification FAIL: "+target_file_path)
