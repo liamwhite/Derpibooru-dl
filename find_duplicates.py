@@ -107,12 +107,15 @@ def find_duplicates(input_folder):
         if (c % 1000) == 0:
             logging.debug("Hashing file #"+str(c)+": "+file_path)
         file_hash = hash_file(file_path)
-        if file_hash in hash_dict.keys():
+        # Check if hash has been seen
+        try:
+            previously_seen = hash_dict[file_hash]
             logging.info("Match! "+hash_dict[file_hash]+" has the same hash as "+file_path)
             # Add both to move list
-            files_to_move.append(hash_dict[file_hash])# From hash dict
-            files_to_move.append(file_path)# Current
-        else:
+            hash_matches.append(hash_dict[file_hash])# From hash dict
+            hash_matches.append(file_path)# Current
+        except KeyError, ke:
+            # If no match in dict
             hash_dict[file_hash] = file_path
     # Uniquify move list
     files_to_move = uniquify(hash_matches)
@@ -132,28 +135,34 @@ def move_duplicates(input_folder,output_folder,no_move=False):
     return
 
 
-def move_file(from_path,output_folder):
-    """Move a file to a specified folder"""
+def move_file(from_path,output_folder,no_move=False):
+    """Move a file to a specified folder or copy it if no_move is True"""
     # Figure out the filename
     filename = os.path.basename(from_path)
     # Make the output path
     output_path = os.path.join(output_folder, filename)
-    logging.info("Moving "+from_path+" to "+output_path)
     try:
         # Ensure folder exists
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
-        # Copy file
-        shutil.copy2(from_path, output_path)
+        if no_move:
+            logging.info("Copying "+from_path+" to "+output_path)
+            # Copy file
+            shutil.copy2(from_path, output_path)
+            return
+        else:
+            logging.info("Moving "+from_path+" to "+output_path)
+            # Move file
+            shutil.move(from_path, output_path)
         return
     except IOError, err:
-        logging.error("Error copying files!")
+        logging.error("Error copying/moving files!")
         logging.exception(err)
         return
 
 
 def main():
-    input_folder = "G:\\derpibooru_dl\\download\\combined_downloads"
+    input_folder = "h:\\derpibooru_dl\\download\\combined_downloads"
     output_folder = "duplicates"
     move_duplicates(input_folder,output_folder,no_move = True)
 
