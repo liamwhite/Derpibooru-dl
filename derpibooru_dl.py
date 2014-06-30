@@ -505,8 +505,9 @@ def setup_browser():
     br.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
     # User-Agent (this is cheating, ok?)
     #br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
-    br.addheaders = [('User-agent', 'Trixie is worst pony')]#[13:57] <%barbeque> as long as it's not something like "trixie is worst pony"
+    #br.addheaders = [('User-agent', 'Trixie is worst pony')]#[13:57] <%barbeque> as long as it's not something like "trixie is worst pony"
     #print "trixie is worst pony"
+    br.addheaders = [('User-agent', 'derpibooru_dl.py - https://github.com/woodenphone/Derpibooru-dl')] # Let's make it easy for the admins to see us so if something goes wrong we'll find out about it.
     return
 
 
