@@ -13,6 +13,7 @@
 import hashlib
 import logging
 import os
+import derpibooru_dl
 
 def setup_logging(log_file_path):
     # Setup logging (Before running any other code)
@@ -126,11 +127,9 @@ def move_duplicates(input_folder,output_folder,no_move=False):
     """Find and move all duplicate files in a folder"""
     duplicates_to_move = find_duplicates(input_folder)
     logging.info("Duplicates found: "+str(duplicates_to_move))
-    if not no_move:
-        for file_path in duplicates_to_move:
-            move_file(from_path,output_folder)
-    else:
-        logging.info("Skipping move of duplicates")
+    derpibooru_dl.save_pickle("debug\\found_duplicates.pickle", duplicates_to_move)
+    for file_path in duplicates_to_move:
+        move_file(from_path, output_folder, no_move)
     logging.info("Done moving duplicates")
     return
 
@@ -154,7 +153,7 @@ def move_file(from_path,output_folder,no_move=False):
             logging.info("Moving "+from_path+" to "+output_path)
             # Move file
             shutil.move(from_path, output_path)
-        return
+            return
     except IOError, err:
         logging.error("Error copying/moving files!")
         logging.exception(err)
