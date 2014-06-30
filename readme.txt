@@ -20,8 +20,12 @@ The API used for the tag mode is depricated, use search mode instead. It should 
 
 
 
+
+Notepad++ is reccomended for editing settings.
+
 Explaination of settings:
 
+For boolean (yes or no) settings, use these:
 True
 False
 
@@ -31,18 +35,35 @@ api_key = Key used to access API (You will need to fill this in.)
 
 [Settings]
 reverse = Work backwards
+
 output_folder = path to output to
+
 download_submission_ids_list = Should submission IDs form the input list be downloaded
+
 download_query_list = Should queries from the input list be downloaded
+
 output_long_filenames = Should the derpibooru filenames be used? (UNSUPPORTED! USE AT OWN RISK!)
+
 input_list_path = Path to a text file containing queries, ids, etc
+
 done_list_path = Path to record finished tasks
+
 failed_list_path = Path to record failed tasks
+
 save_to_query_folder = Should each query/tag/etc save to a folder of QUERY_NAME or use one single folder for everything
+
 skip_downloads = Should no downloads be attempted
+
 sequentially_download_everything = Should the range download mode try to save every possible submission?
+
 go_backwards_when_using_sequentially_download_everything = Start at the most recent submission instead of the oldest when trying to download everything.
+
 download_last_week = Should the last 7000 submissions be downloaded (Approx 1 weeks worth)
+
 skip_glob_duplicate_check = You should probably not use this unless you know what you are doing. (Speedhack for use with single output folder)
+
 skip_known_deleted = Should previously encounterd deleted submissions be skipped?
+
 deleted_submissions_list_path = Relative path to put list of known deleted submissions
+
+move_on_fail_verification = Should files that fail the verification be moved? If false they will only be copied.
