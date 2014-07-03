@@ -15,12 +15,12 @@ from derpibooru_dl import *
 
 def main():
     # Load settings
-    settings = config_handler("config\\derpibooru_dl_config.cfg")
+    settings = config_handler(os.path.join("config","derpibooru_dl_config.cfg"))
     verify_folder(settings, settings.output_folder)
 
 if __name__ == '__main__':
     # Setup logging
-    setup_logging("debug\\derpibooru_verify_log.txt")
+    setup_logging(os.path.join("debug","derpibooru_verify_log.txt"))
     try:
         #cj = cookielib.LWPCookieJar()
         #setup_browser()

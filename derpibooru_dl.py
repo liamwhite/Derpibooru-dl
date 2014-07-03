@@ -117,7 +117,7 @@ def getwithinfo(url):
             delay(GET_RETRY_DELAY)
             logging.debug( "Attempt " + str(attemptcount) + " for URL: " + url )
         try:
-            save_file("debug\\get_last_url.txt", url, True)
+            save_file(os.path.join("debug","get_last_url.txt"), url, True)
             r = br.open(url, timeout=100)
             info = r.info()
             reply = r.read()
@@ -129,7 +129,7 @@ def getwithinfo(url):
                 #print "saving debug html"
                 save_file("debug\\get_last_html.htm", reply, True)
             else:
-                save_file("debug\\get_last_not_html.txt", reply, True)
+                save_file(os.path.join("debug","get_last_not_html.txt"), reply, True)
             # Retry if empty response and not last attempt
             if (len(reply) < 1) and (attemptcount < GET_MAX_ATTEMPTS):
                 logging.error("reply too short :"+str(reply))
@@ -147,7 +147,7 @@ def getwithinfo(url):
                 logging.debug("410 error, GONE")
                 return
             else:
-                save_file("debug\\HTTPError.htm", err.fp.read(), True)
+                save_file(os.path.join("debug","HTTPError.htm"), err.fp.read(), True)
                 continue
         except urllib2.URLError, err:
             logging.debug(str(err))
@@ -298,9 +298,9 @@ class config_handler():
         self.download_submission_ids_list = True
         self.download_query_list = True
         self.output_long_filenames = False # Should we use the derpibooru supplied filename with the tags? !UNSUPPORTED!
-        self.input_list_path = "config\\derpibooru_dl_tag_list.txt"
-        self.done_list_path = "config\\derpibooru_done_list.txt"
-        self.failed_list_path = "config\\derpibooru_failed_list.txt"
+        self.input_list_path = os.path.join("config","derpibooru_dl_tag_list.txt")
+        self.done_list_path = os.path.join("config","derpibooru_done_list.txt")
+        self.failed_list_path = os.path.join("config","derpibooru_failed_list.txt")
         self.save_to_query_folder = True # Should we save to multiple folders?
         self.skip_downloads = False # Don't retrieve remote submission files after searching
         self.sequentially_download_everything = False # download submission 1,2,3...
@@ -308,12 +308,12 @@ class config_handler():
         self.download_last_week = False # Download (approximately) the last weeks submissions
         self.skip_glob_duplicate_check = False # Skip glob.glob based duplicate check (only check if output file exists instead of scanning all output paths)
         self.skip_known_deleted = True # Skip submissions of the list of known deleted IDs
-        self.deleted_submissions_list_path = "config\\deleted_submissions.txt"
+        self.deleted_submissions_list_path = os.path.join("config","deleted_submissions.txt")
         self.move_on_fail_verification = False # Should files be moved if verification of a submission fails?
 
         # Internal variables, these are set through this code only
-        self.resume_file_path = "config\\resume.pkl"
-        self.pointer_file_path = "config\\dl_everything_pointer.pkl"
+        self.resume_file_path = os.path.join("config","resume.pkl")
+        self.pointer_file_path = os.path.join("config","dl_everything_pointer.pkl")
         self.filename_prefix = "derpi_"
         self.sft_max_attempts = 10 # Maximum retries in search_for_tag()
         self.max_search_page_retries = 10 # maximum retries for a search page
@@ -551,7 +551,7 @@ def load_search_page(settings,search_url):
             logging.error( str( type(err ) ) )
             logging.error( repr(locals()) )
             logging.debug("saving local variables to pickle")
-            save_pickle("debug\\locals.pickle",locals())
+            save_pickle(os.path.join("debug","locals.pickle"),locals())
             logging.exception(err)
         print this_page_item_ids
         return this_page_item_ids
@@ -1204,7 +1204,7 @@ def find_id_from_filename(settings, file_path):
 
 def main():
     # Load settings
-    settings = config_handler("config\\derpibooru_dl_config.cfg")
+    settings = config_handler(os.path.join("config","derpibooru_dl_config.cfg"))
     if len(settings.api_key) < 5:
         logging.warning("No API key set, weird things may happen.")
     # Load tag list
@@ -1250,7 +1250,7 @@ def main():
 
 if __name__ == '__main__':
     # Setup logging
-    setup_logging("debug\\derpibooru_dl_log.txt")
+    setup_logging(os.path.join("debug","derpibooru_dl_log.txt"))
     try:
         cj = cookielib.LWPCookieJar()
         setup_browser()

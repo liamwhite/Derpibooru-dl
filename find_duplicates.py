@@ -183,14 +183,14 @@ def main():
     input_folder = "h:\\derpibooru_dl\\download\\combined_downloads"
     output_folder = "duplicates"
     global pickle_path
-    pickle_path = "debug\\found_duplicates.pickle"
+    pickle_path = os.path.join("debug","found_duplicates.pickle")
     move_from_pickle(pickle_path, output_folder, no_move=False)
     return
     move_duplicates(input_folder, output_folder, pickle_path, no_move = True)
 
 if __name__ == '__main__':
     # Setup logging
-    setup_logging("debug\\derpibooru_move_duplicate_files_log.txt")
+    setup_logging(os.path.join("debug","derpibooru_move_duplicate_files_log.txt"))
     try:
         #cj = cookielib.LWPCookieJar()
         #setup_browser()

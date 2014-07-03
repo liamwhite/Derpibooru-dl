@@ -21,7 +21,7 @@ import ConfigParser
 
 
 class settings_handler:
-    def __init__(self,settings_path="config\\derpibooru_deduplicate_config.cfg"):
+    def __init__(self,settings_path=os.path.join("config","derpibooru_deduplicate_config.cfg")):
         self.set_defaults()
         self.load_file(settings_path)
         self.save_settings(settings_path)
@@ -33,8 +33,8 @@ class settings_handler:
         self.use_tag_list = True# Use tag list instead of processing everything
         self.move_files = False# Move files instead of copying them
         self.reverse = False
-        self.input_list_path = "config\\tags_to_deduplicate.txt"
-        self.done_list_path = "config\\derpibooru_deduplicate_done_list.txt"
+        self.input_list_path = os.path.join("config","tags_to_deduplicate.txt")
+        self.done_list_path = os.path.join("config","derpibooru_deduplicate_done_list.txt")
         self.combined_download_folder_name = "combined_downloads"# Name of subfolder to use when saving to only one folder
         self.slow_for_debug = False # Pause between folders and files
         self.filename_prefix = "derpi_"
@@ -277,7 +277,7 @@ def list_subfolders(start_path):
 
 
 def main():
-    settings = settings_handler("config\\derpibooru_deduplicate_config.cfg")
+    settings = settings_handler(os.path.join("config","derpibooru_deduplicate_config.cfg"))
     if settings.use_tag_list is True:
         # Load todo list
         tag_list = derpibooru_dl.import_list(settings.input_list_path)
@@ -288,7 +288,7 @@ def main():
 
 if __name__ == '__main__':
     # Setup logging
-    derpibooru_dl.setup_logging("debug\\derpibooru_deduplicate_log.txt")
+    derpibooru_dl.setup_logging(os.path.join("debug","derpibooru_deduplicate_log.txt"))
     try:
         main()
     except Exception, err:
