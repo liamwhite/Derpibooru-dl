@@ -13,6 +13,8 @@
 import hashlib
 import logging
 import os
+import shutil
+
 import derpibooru_dl
 
 def setup_logging(log_file_path):
@@ -123,14 +125,28 @@ def find_duplicates(input_folder):
     return files_to_move
 
 
-def move_duplicates(input_folder,output_folder,no_move=False):
+def move_duplicates(input_folder,output_folder,pickle_path,no_move=False):
     """Find and move all duplicate files in a folder"""
     duplicates_to_move = find_duplicates(input_folder)
-    logging.info("Duplicates found: "+str(duplicates_to_move))
-    derpibooru_dl.save_pickle("debug\\found_duplicates.pickle", duplicates_to_move)
-    for file_path in duplicates_to_move:
-        move_file(from_path, output_folder, no_move)
+    logging.info("Found "+str(len(duplicates_to_move))+" items with hashes matching another file")
+    logging.debug("Duplicates found: "+str(duplicates_to_move))
+    derpibooru_dl.save_pickle(pickle_path, duplicates_to_move)
     logging.info("Done moving duplicates")
+    return
+
+
+def move_from_pickle(pickle_path,output_folder,no_move=False):
+    logging.info("Moving files from pickle: "+pickle_path)
+    file_paths = derpibooru_dl.read_pickle(pickle_path)
+    move_files(file_paths,output_folder,no_move=False)
+    return
+
+
+def move_files(file_paths,output_folder,no_move=False):
+    logging.info("Moving files...")
+    for file_path in file_paths:
+        move_file(file_path, output_folder, no_move)
+    logging.info("Finished moving files.")
     return
 
 
@@ -144,18 +160,21 @@ def move_file(from_path,output_folder,no_move=False):
         # Ensure folder exists
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
-        if no_move:
+        if no_move is True:
             logging.info("Copying "+from_path+" to "+output_path)
             # Copy file
             shutil.copy2(from_path, output_path)
             return
-        else:
+        elif no_move is False:
             logging.info("Moving "+from_path+" to "+output_path)
             # Move file
             shutil.move(from_path, output_path)
             return
+        else:
+            raise ValueError
     except IOError, err:
         logging.error("Error copying/moving files!")
+        logging.debug( repr( locals() ) )
         logging.exception(err)
         return
 
@@ -163,7 +182,11 @@ def move_file(from_path,output_folder,no_move=False):
 def main():
     input_folder = "h:\\derpibooru_dl\\download\\combined_downloads"
     output_folder = "duplicates"
-    move_duplicates(input_folder,output_folder,no_move = True)
+    global pickle_path
+    pickle_path = "debug\\found_duplicates.pickle"
+    move_from_pickle(pickle_path, output_folder, no_move=False)
+    return
+    move_duplicates(input_folder, output_folder, pickle_path, no_move = True)
 
 if __name__ == '__main__':
     # Setup logging
