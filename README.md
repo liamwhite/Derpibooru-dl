@@ -1,11 +1,19 @@
 # Derpibooru Downloader
 
 ## Instalation and configuration
+### Standalone executable version for Windows
+- Download from https://github.com/woodenphone/Derpibooru-dl/releases
+- This is an experimental version that only contains the downloader
+
+### Python scripts
 - You need to have Python installed first. [You can download it here.
 ](https://www.python.org/download/)
 - Then you need pip installed. [See here for the docs](http://pip.readthedocs.org/en/latest/installing.html).
 - Then in your command line, do `pip install mechanize`.
+
+### Configuration for all versions
 - We need to run derpibooru_dl to create settings files.
+    - On Windows, using the standalone executable version, run `derpibooru_dl.exe`
     - On Windows, run `python derpibooru_dl.py`
     - On Mac and GNU/Linux, run `python derpibooru_dl_nix.py`
 - Copy your API key from [https://derpibooru.org/users/edit](https://derpibooru.org/users/edit)
