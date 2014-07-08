@@ -49,10 +49,17 @@ def build_tag_db(settings,tag_db_dict={}):
     logging.debug("Building tag DB")
     # Scan target folder for .JSON files
     target_folder = settings.output_folder
-    found_submission_paths = derpibooru_dl.walk_for_file_paths(target_folder)
+    #if settings.tag_splitter_speedhack:
+    # Speedhack, don't use unless you understand the code
+    # Generate paths for every submission rather than look for paths from disk
+    generated_submission_paths = []
+    for number in xrange(0,1000000):
+        generated_submission_path = os.path.join(target_folder, "json", str(number)+".JSON")
+    #found_submission_paths = derpibooru_dl.walk_for_file_paths(target_folder)
     # For each JSON file, get ID from filename
-    logging.debug("Processing JSON for DB")
-    for found_submission_path in found_submission_paths:
+        logging.debug("Processing JSON for DB")
+    #for found_submission_path in found_submission_paths:
+        found_submission_path = generated_submission_path
         # Generate path to the json file
         submission_id = derpibooru_dl.find_id_from_filename(settings, found_submission_path)
         json_filename = submission_id+".json"
@@ -108,7 +115,7 @@ def copy_tag(settings,tag_db_dict,tag):
 
 def copy_tag_list(settings):
     # Read tag list from config folder
-    user_input_list = derpibooru_dl.import_list(listfilename="ERROR.txt")
+    user_input_list = derpibooru_dl.import_list(listfilename=settings.tag_splitter_tag_list_path)
     # Get database of tags
     tag_db_dict = get_tag_db(settings)
     # Iterate through user input list
@@ -125,6 +132,7 @@ def main():
     # Settings to impliment in main settings TODO
     settings.tag_splitter_tag_db_file_path = "config\\tag_db.pkl"
     settings.tag_splitter_tag_list_path = "config\\tags_to_split.txt"
+    settings.tag_splitter_speedhack = True # Speedhacks for tag splitter, for dev's computer only
     copy_tag_list(settings)
 
 if __name__ == '__main__':
