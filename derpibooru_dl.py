@@ -289,6 +289,7 @@ class config_handler():
 
     def set_defaults(self):
         """Set the defaults for settings, these will be overridden by settings from a file"""
+        # derpibooru_dl.py
         # Login
         self.api_key = ""
 
@@ -320,6 +321,9 @@ class config_handler():
         self.combined_download_folder_name = "combined_downloads"# Name of subfolder to use when saving to only one folder
         self.max_download_attempts = 10 # Number of times to retry a download before skipping
         self.verification_fail_output_path = "failed_verification"
+        # /derpibooru_dl.py
+        # split_to_tag_folders.py
+        # /split_to_tag_folders.py
         return
 
     def load_file(self,settings_path):
@@ -328,6 +332,7 @@ class config_handler():
         if not os.path.exists(settings_path):
             return
         config.read(settings_path)
+        # derpibooru_dl.py
         # Login
         try:
             self.api_key = config.get('Login', 'api_key')
@@ -402,11 +407,15 @@ class config_handler():
             self.move_on_fail_verification = config.getboolean('Settings', 'move_on_fail_verification')
         except ConfigParser.NoOptionError:
             pass
+        # /derpibooru_dl.py
+        # split_to_tag_folders.py
+        # /split_to_tag_folders.py
         return
 
     def save_settings(self,settings_path):
         """Save settings to a file"""
         config = ConfigParser.RawConfigParser()
+        # derpibooru_dl.py
         config.add_section('Login')
         config.set('Login', 'api_key', self.api_key )
         config.add_section('Settings')
@@ -427,6 +436,9 @@ class config_handler():
         config.set('Settings', 'skip_known_deleted', str(self.skip_known_deleted) )
         config.set('Settings', 'deleted_submissions_list_path', str(self.deleted_submissions_list_path) )
         config.set('Settings', 'move_on_fail_verification', str(self.move_on_fail_verification) )
+        # /derpibooru_dl.py
+        # split_to_tag_folders.py
+        # /split_to_tag_folders.py
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
