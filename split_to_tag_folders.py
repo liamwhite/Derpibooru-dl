@@ -23,7 +23,13 @@ def add_tags_to_dict(settings,tags_db_dict,json_id,json_path,tags):
     """Add the specified tags to the dict and return the new one
     Format is: tag_db = {processed:{ID1:JSON_Path1,ID2:JSON_Path2,...} tags:{tag1:{ID1:JSON_path1,ID2:JSON_Path2}, tag2:{....},...}"""
     for tag in tags:
-        tags_db_dict["tags"][tag][id_number] = json_path
+        # Ensure dict for tag exists
+        try:
+            tags_db_dict["tags"][tag]
+        except KeyError:
+            tags_db_dict["tags"][tag] = {}
+            # Add entry to tag dict
+        tags_db_dict["tags"][tag][json_id] = json_path
     return tags_db_dict
 
 
@@ -31,11 +37,12 @@ def add_tags_to_dict(settings,tags_db_dict,json_id,json_path,tags):
 def read_tags_from_json_file(json_path):
     """Open a derpibooru .JSON file and return the tags from it"""
     # Read JSON
-    json_string = read_file(json_path)
+    json_string = derpibooru_dl.read_file(json_path)
     decoded_json = derpibooru_dl.decode_json(json_string)
     # Grab tags
-    tags_from_json = decoded_json["tags"]
-    logging.debug(tags_from_json)#remove
+    tag_string_from_json = decoded_json["tags"]
+    tags_from_json = tag_string_from_json.split(",")
+    #logging.debug(tags_from_json)
     return tags_from_json
 
 
@@ -46,29 +53,26 @@ def build_tag_db(settings,tag_db_dict={}):
     If given, add to existing DB dict, otherwise build one from scratch.
     Format is: tag_db = {processed:{ID1:JSON_Path1,ID2:JSON_Path2,...} tags:{tag1:{ID1:JSON_path1,ID2:JSON_Path2}, tag2:{....},...}"""
     building_new_db = (len(tag_db_dict) is len({}))
+    if building_new_db:
+        # Initialize dict
+        tag_db_dict["processed"] = {}
+        tag_db_dict["tags"] = {}
     logging.debug("Building tag DB")
     # Scan target folder for .JSON files
-    target_folder = settings.output_folder
-    #if settings.tag_splitter_speedhack:
-    # Speedhack, don't use unless you understand the code
-    # Generate paths for every submission rather than look for paths from disk
-    generated_submission_paths = []
-    for number in xrange(0,1000000):
-        generated_submission_path = os.path.join(target_folder, "json", str(number)+".JSON")
-    #found_submission_paths = derpibooru_dl.walk_for_file_paths(target_folder)
-    # For each JSON file, get ID from filename
-        logging.debug("Processing JSON for DB")
-    #for found_submission_path in found_submission_paths:
-        found_submission_path = generated_submission_path
+    target_folder = os.path.join(settings.output_folder, settings.combined_download_folder_name)
+    number_of_ids_in_dict = len(tag_db_dict["processed"])
+    logging.debug("number of keys in processed listing dict:"+str(number_of_ids_in_dict))
+    # Use xrange() to generate paths because it's faster than os.walk() for large folders
+    for number in xrange(number_of_ids_in_dict,1000000):
         # Generate path to the json file
-        submission_id = derpibooru_dl.find_id_from_filename(settings, found_submission_path)
+        submission_id = str(number)
         json_filename = submission_id+".json"
         json_path = os.path.join(target_folder, "json", json_filename)
         if os.path.exists(json_path):
             # Check if id is in processed dict
             try:
                 #tag_db = {processed:{ID1:JSON_Path1,ID2:JSON_Path2,...},...}
-                dummy_path = tag_db["processed"][submission_id]
+                dummy_path = tag_db_dict["processed"][submission_id]
                 # True; ID has been processed.
                 pass
             except KeyError:
@@ -80,7 +84,7 @@ def build_tag_db(settings,tag_db_dict={}):
                 tag_db_dict = add_tags_to_dict(settings,tag_db_dict,submission_id,json_path,tags)
 
         else:
-            logging.error("JSON not found for submission! "+found_submission_path)
+            logging.error("JSON not found for id! "+json_path)
     #Once all paths are processed, return finished dict
     return tag_db_dict
 
@@ -103,14 +107,22 @@ def get_tag_db(settings):
     # tag_db = { tag1:{ID1:path1,ID2:Path2},tag2:{....},...}
     # Try loading from saved pickle
     tag_db_dict_from_file = load_tag_db_pickle(settings)
-    new_tag_db_dict = build_tag_db(settings,tag_db_dict_from_file)
-    return new_tag_db_dict
+    if settings.tag_splitter_update_tag_db:
+        new_tag_db_dict = build_tag_db(settings,tag_db_dict_from_file)
+        return new_tag_db_dict
+    else:
+        return tag_db_dict_from_file
 
 
 def copy_tag(settings,tag_db_dict,tag):
     """Copy all files matching the given tag to a folder /<tag>/ in the output folder.
     Format is: tag_db = {processed:{ID1:JSON_Path1,ID2:JSON_Path2,...} tags:{tag1:{ID1:JSON_path1,ID2:JSON_Path2}, tag2:{....},...}"""
     tag_ids_dict = tag_db_dict["tags"][tag]
+    id_to_copy = tag_ids_dict.keys()
+    logging.debug("About to copy these items to "+tag+": "+str(id_to_copy))
+    output_folder = os.path.join(settings.output_folder,tag)
+    for id_to_copy in ids_to_copy:
+        derpibooru_dl.copy_over_if_duplicate(settings,id_to_copy,output_folder)
 
 
 def copy_tag_list(settings):
@@ -119,8 +131,13 @@ def copy_tag_list(settings):
     # Get database of tags
     tag_db_dict = get_tag_db(settings)
     # Iterate through user input list
+    counter = 0
     for tag in user_input_list:
+        tag += u""# convert input to unicode
+        counter += 1
+        logging.debug("Now copying tag "+str(counter)+" of "+str(len(user_input_list))+":"+tag)
         tag_db_dict = copy_tag(settings,tag_db_dict,tag)
+    logging.info("Done copying tags")
     pass
 
 
@@ -132,6 +149,7 @@ def main():
     # Settings to impliment in main settings TODO
     settings.tag_splitter_tag_db_file_path = "config\\tag_db.pkl"
     settings.tag_splitter_tag_list_path = "config\\tags_to_split.txt"
+    settings.tag_splitter_update_tag_db = False
     settings.tag_splitter_speedhack = True # Speedhacks for tag splitter, for dev's computer only
     copy_tag_list(settings)
 
