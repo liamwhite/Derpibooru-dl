@@ -56,4 +56,5 @@ go_backwards_when_using_sequentially_download_everything = **Start at the most r
 download_last_week = **Should the last 7000 submissions be downloaded (Approx 1 weeks worth)**
 skip_glob_duplicate_check = **You should probably not use this unless you know what you are doing. (Speedhack for use with single output folder)**
 move_on_fail_verification = **Should files that fail the verification be moved? If false they will only be copied.**
+save_comments = **Should image comments be requested and saved, uses more resources on both client and server.**
 ````

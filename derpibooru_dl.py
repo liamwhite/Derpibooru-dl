@@ -311,6 +311,7 @@ class config_handler():
         self.skip_known_deleted = True # Skip submissions of the list of known deleted IDs
         self.deleted_submissions_list_path = os.path.join("config","deleted_submissions.txt")
         self.move_on_fail_verification = False # Should files be moved if verification of a submission fails?
+        self.save_comments = False # Should comments be saved, uses more resources.
 
         # Internal variables, these are set through this code only
         self.resume_file_path = os.path.join("config","resume.pkl")
@@ -407,15 +408,15 @@ class config_handler():
             self.move_on_fail_verification = config.getboolean('Settings', 'move_on_fail_verification')
         except ConfigParser.NoOptionError:
             pass
-        # /derpibooru_dl.py
-        # split_to_tag_folders.py
-        # /split_to_tag_folders.py
+        try:
+            self.save_comments = config.getboolean('Settings', 'save_comments')
+        except ConfigParser.NoOptionError:
+            pass
         return
 
     def save_settings(self,settings_path):
         """Save settings to a file"""
         config = ConfigParser.RawConfigParser()
-        # derpibooru_dl.py
         config.add_section('Login')
         config.set('Login', 'api_key', self.api_key )
         config.add_section('Settings')
@@ -436,9 +437,7 @@ class config_handler():
         config.set('Settings', 'skip_known_deleted', str(self.skip_known_deleted) )
         config.set('Settings', 'deleted_submissions_list_path', str(self.deleted_submissions_list_path) )
         config.set('Settings', 'move_on_fail_verification', str(self.move_on_fail_verification) )
-        # /derpibooru_dl.py
-        # split_to_tag_folders.py
-        # /split_to_tag_folders.py
+        config.set('Settings', 'save_comments', str(self.save_comments) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
@@ -732,7 +731,11 @@ def download_submission(settings,search_query,submission_id):
         if submission_id in settings.deleted_submissions_list:
             return
     # Build JSON URL
-    json_url = "https://derpibooru.org/"+submission_id+".json?key="+settings.api_key
+    # Option to save comments, uses more resources.
+    if settings.save_comments:
+        json_url = "https://derpibooru.org/"+submission_id+".json?comments=true&key="+settings.api_key
+    else:
+        json_url = "https://derpibooru.org/"+submission_id+".json?key="+settings.api_key
     # Retry if needed
     download_attempt_counter = 0
     while download_attempt_counter <= settings.max_download_attempts:
