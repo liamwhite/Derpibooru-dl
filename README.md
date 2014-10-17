@@ -1,11 +1,14 @@
 # Derpibooru Downloader
 
 ## Instalation and configuration
+- There are two ways to run Derpibooru_dl, a windows executable or directly from the script itself.
 ### Standalone executable version for Windows
+- Suggested for anyone without programming experience.
 - Download from https://github.com/woodenphone/Derpibooru-dl/releases
-- This is an experimental version that only contains the downloader
+- This only contains the downloader itself.
 
 ### Python scripts
+- This is only suggested for those with experience in using python.
 - You need to have Python installed first. [You can download it here.
 ](https://www.python.org/download/)
 - Then you need pip installed. [See here for the docs](http://pip.readthedocs.org/en/latest/installing.html).
