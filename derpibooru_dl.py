@@ -28,7 +28,7 @@ import shutil
 import pickle
 import socket
 import hashlib
-
+import string
 
 
 # getwithinfo()
@@ -45,9 +45,11 @@ def setup_logging(log_file_path):
     assert( len(log_file_path) > 1 )
     assert( type(log_file_path) == type("") )
     global logger
-    log_file_folder =  os.path.split(log_file_path)[0]
-    if not os.path.exists(log_file_folder):
-        os.makedirs(log_file_folder)
+    # Make sure output dir exists
+    log_file_folder =  os.path.dirname(log_file_path)
+    if log_file_folder is not None:
+        if not os.path.exists(log_file_folder):
+            os.makedirs(log_file_folder)
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -278,7 +280,12 @@ def append_list(lines,list_file_path="weasyl_done_list.txt",initial_text="# List
 
 
 class config_handler():
-    def __init__(self,settings_path="derpibooru_dl_config.cfg"):
+    def __init__(self,settings_path):
+        # Make sure settings folder exists
+        settings_folder = os.path.dirname(settings_path)
+        if settings_folder is not None:
+            if not os.path.exists(settings_folder):
+                os.makedirs(settings_folder)
         # Setup settings, these are static
         self.set_defaults()
         self.load_file(settings_path)
@@ -1135,7 +1142,6 @@ def verify_saved_submission(settings,target_file_path):
     json_fail_path = os.path.join(json_fail_folder, json_filename)
     json_string = read_file(json_path)
     decoded_json = decode_json(json_string)
-
     # Test the data
     # If ID < 6000 or type is .svg, skip tests.
     id_from_json = str(decoded_json["id_number"])
@@ -1145,7 +1151,6 @@ def verify_saved_submission(settings,target_file_path):
     if submission_path[-4:].lower() == ".svg".lower():
         logging.info("Extention is .svg, skipping tests due to unreliable hash.")
         return None
-
     # Does the JSON provided hash match the image?
     json_hash = decoded_json["sha512_hash"]
     # http://www.pythoncentral.io/hashing-files-with-python/
@@ -1163,7 +1168,6 @@ def verify_saved_submission(settings,target_file_path):
         logging.debug(repr(json_hash))
         failed_test = True
     # Does the ID from the JSON match the image and JSON filenames?
-
     # Image filename
     id_from_image_filename = find_id_from_filename(settings, submission_path)
     if id_from_json != id_from_image_filename:
@@ -1215,11 +1219,30 @@ def find_id_from_filename(settings, file_path):
         return submission_id
 
 
+def verify_api_key(api_key):
+    """Test to see if a given API key looks real.
+    Return True if it looks okay, False if it looks bad"""
+    assert(type(api_key) is type(""))# If this is not a string bad things will probably happen, and something has most likely gone wrong in the import code
+    # Test length of key
+    # Known valid lengths: 20,
+    if not (10 <= len(api_key) <= 50):
+        logging.error("API key length invalid.")
+        return False
+    # Test if any characters outside those allowed are in the string (Assuming alphanumeric ascii only)
+    # http://stackoverflow.com/questions/89909/how-do-i-verify-that-a-string-only-contains-letters-numbers-underscores-and-da
+    allowed_characters = string.ascii_letters + string.digits
+    if set(api_key) - set(allowed_characters): # Remove any characters that are allowed, if any characters remain we have invalid characters in the string.
+        logging.error(" API key contains invalid characters.")
+        return False
+    # If no test has failed, we have a valid key.
+    logging.debug("API Key looks fine.")
+    return True
 
 
 def main():
     # Load settings
     settings = config_handler(os.path.join("config","derpibooru_dl_config.cfg"))
+    verify_api_key(settings.api_key)
     if len(settings.api_key) < 5:
         logging.warning("No API key set, weird things may happen.")
     # Load tag list
@@ -1237,6 +1260,7 @@ def main():
     #return
     # /DEBUG
     # Handle resuming query download operations
+    logging.info("Attempting to resume any failed downloads.")
     resumed_query = resume_downloads(settings)
     if resumed_query is not False:
         # Skip everything before and including resumed tag
@@ -1250,16 +1274,21 @@ def main():
     # Ordered based on expected time to complete operations.
     # Download individual submissions
     if settings.download_submission_ids_list:
+        logging.info("Now downloading user set IDs.")
         download_ids(settings,input_list,"from_list")
     # Download last week mode (~7,000 items)
     if settings.download_last_week:
+        logging.info("Now downloading the last week's submissions.")
         download_this_weeks_submissions(settings)
     # Process each search query
     if settings.download_query_list:
+        logging.info("Now downloading user set tags/queries")
         download_query_list(settings,input_list)
     # Download evrything mode
     if settings.sequentially_download_everything:
+        logging.info("Now downloading all submissions on the site")
         download_everything(settings)
+    logging.info("All tasks done, exiting.")
     return
 
 

@@ -1,2 +1,4 @@
 releases/
 *.pyc
+build/
+dist/
