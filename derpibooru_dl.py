@@ -1227,8 +1227,9 @@ def verify_api_key(api_key):
     if api_key =="Replace_this_with_your_API_key":
         return False
     # Test length of key
-    # Known valid lengths: 20,
-    if not (10 <= len(api_key) <= 50):
+    # [21:07] <@CloverTheClever> Ctrl-S: it'll be alphanumeric and fixed size iirc
+    # Known valid lengths: 20
+    if not (len(api_key) == 20):
         logging.error("API key length invalid.")
         return False
     # Test if any characters outside those allowed are in the string (Assuming alphanumeric ascii only)
