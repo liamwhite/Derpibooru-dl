@@ -298,7 +298,7 @@ class config_handler():
         """Set the defaults for settings, these will be overridden by settings from a file"""
         # derpibooru_dl.py
         # Login
-        self.api_key = ""
+        self.api_key = "Replace_this_with_your_API_key"
 
         # Download Settings
         self.reverse = False
@@ -651,9 +651,9 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
     # Generate search pattern
     glob_string = os.path.join(settings.output_folder, "*", expected_submission_filename)
     # Use glob to check for existing files matching the expected pattern
-    logging.debug("CALLING glob.glob, local vars: "+ repr(locals()))
+    #logging.debug("CALLING glob.glob, local vars: "+ repr(locals()))
     glob_matches = glob.glob(glob_string)
-    logging.debug("CALLED glob.glob, locals: "+repr(locals()))
+    #logging.debug("CALLED glob.glob, locals: "+repr(locals()))
     # Check if any matches, if no matches then return False
     if len(glob_matches) == 0:
         return False
@@ -1223,6 +1223,9 @@ def verify_api_key(api_key):
     """Test to see if a given API key looks real.
     Return True if it looks okay, False if it looks bad"""
     assert(type(api_key) is type(""))# If this is not a string bad things will probably happen, and something has most likely gone wrong in the import code
+    # Test for the default string
+    if api_key =="Replace_this_with_your_API_key":
+        return False
     # Test length of key
     # Known valid lengths: 20,
     if not (10 <= len(api_key) <= 50):
@@ -1243,8 +1246,9 @@ def main():
     # Load settings
     settings = config_handler(os.path.join("config","derpibooru_dl_config.cfg"))
     verify_api_key(settings.api_key)
-    if len(settings.api_key) < 5:
+    if settings.api_key == "Replace_this_with_your_API_key": # Remove placeholder key
         logging.warning("No API key set, weird things may happen.")
+        settings.api_key = ""
     # Load tag list
     raw_input_list = import_list(settings.input_list_path)
     # Fix input list
