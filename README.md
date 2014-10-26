@@ -26,7 +26,8 @@ There are two ways to run Derpibooru_dl, a windows executable or directly from t
 - Copy your API key from [https://derpibooru.org/users/edit](https://derpibooru.org/users/edit)
 - Past it to the appropriate line in the `derpibooru_dl_config.cfg` inside the `config` folder. (e.g. `api_key = Ap1k3Yh3Re`)
 - Put the queries you want to download in `derpibooru_dl_tag_list.txt` in the `config` folder, with one query per line.
-- Full derpibooru search syntax MAY be available. If your query works on the site but not in this script, please send a private message to my account "misspelledletter" on derpibooru
+- Full derpibooru search syntax MAY be available. Syntax guide is available at [https://derpibooru.org/search/syntax](https://derpibooru.org/search/syntax)
+- If your query works on the site but not in this script, please send a private message to my account "misspelledletter" on derpibooru.
 - Example of query list.
 ````
 Tag1
