@@ -1314,7 +1314,7 @@ def console_menu(settings,input_file_list):
             # Download a user specified query.
             print "Enter your search query then press enter. Leave empty to cancel."
             search_query = raw_input()
-            logging.debug("Query: "+reprsearch_query())
+            logging.debug("Query: "+repr(search_query))
             if len(search_query) > 0:
                 process_query(settings,search_query)
                 append_list(search_query, settings.done_list_path)
