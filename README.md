@@ -25,12 +25,15 @@ There are two ways to run Derpibooru_dl, a windows executable or directly from t
 - Without a valid API key you will not be able to download anything not visible in the default guest view.
 - Copy your API key from [https://derpibooru.org/users/edit](https://derpibooru.org/users/edit)
 - Past it to the appropriate line in the `derpibooru_dl_config.cfg` inside the `config` folder. (e.g. `api_key = Ap1k3Yh3Re`)
-- Put the tags you want to download in `derpibooru_dl_tag_list.txt` in the `config` folder, with one tag per line. e.g.
+- Put the queries you want to download in `derpibooru_dl_tag_list.txt` in the `config` folder, with one query per line.
+- Full derpibooru search syntax MAY be available. If your query works on the site but not in this script, please send a private message to my account "misspelledletter" on derpibooru
+- Example of query list.
 ````
 Tag1
 tag_2
 tag+3
 T4g 4
+tag-five || tag-six
 ````
 - Run derpibooru_dl again to download your set.
 - After a tag has been processed, it will be written to the file `derpibooru_done_list.txt`, in the `config` folder.
@@ -46,7 +49,7 @@ For boolean (yes or no) settings, use these: `True` or `False`
 [Login]
 api_key = **Key used to access API (You will need to fill this in.)**
 
-[Settings]
+[Download]
 reverse = **Work backwards**
 output_folder = **path to output to**
 download_submission_ids_list = **Should submission IDs form the input list be downloaded**
@@ -63,6 +66,10 @@ download_last_week = **Should the last 7000 submissions be downloaded (Approx 1 
 skip_glob_duplicate_check = **You should probably not use this unless you know what you are doing. (Speedhack for use with single output folder)**
 move_on_fail_verification = **Should files that fail the verification be moved? If false they will only be copied.**
 save_comments = **Should image comments be requested and saved, uses more resources on both client and server.**
+
+[General]
+show_menu **Should a text based menu be shown instead of automatically running the batch mode?**
+hold_window_open = **Should the window be kept open after all tasks are done, to allow the user to confirm the program worked**
 ````
 
 ### Example of typical settings
@@ -70,9 +77,9 @@ save_comments = **Should image comments be requested and saved, uses more resour
 - Make sure to use your own API key, the one here is just an example
 ````
 [Login]
-api_key = useyourownkey
+api_key = Replace_this_with_your_API_key
 
-[Settings]
+[Download]
 reverse = False
 output_folder = download
 download_submission_ids_list = True
@@ -92,4 +99,21 @@ deleted_submissions_list_path = config\deleted_submissions.txt
 move_on_fail_verification = False
 save_comments = False
 
+[General]
+show_menu = True
+hold_window_open = True
+
+
 ````
+
+### Tips and Fixes
+- When editing settings or input lists, you may find that your text editor does not display items on different lines properly.
+    - This is probably due to the text editor you are using, try using a different editor, such as notepad++
+    - Known incompatible editors:
+    ````
+    Microsoft Notepad (Ships with Windows)
+    ````
+    - Known compatible editors:
+    ````
+    Notepad++ [http://www.notepad-plus-plus.org/](http://www.notepad-plus-plus.org/)
+    ````
