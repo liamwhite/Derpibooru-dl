@@ -17,7 +17,7 @@ There are two ways to run Derpibooru_dl, a windows executable or directly from t
 - Then in your command line, do `pip install mechanize`.
 - Read the configuration section for the next steps
 
-### Configuration for all versions
+### Configuration and running for all versions
 - We need to run derpibooru_dl to create settings files.
     - On Windows, using the standalone executable version, run `derpibooru_dl.exe`
     - On Windows, run `python derpibooru_dl.py`
@@ -25,16 +25,15 @@ There are two ways to run Derpibooru_dl, a windows executable or directly from t
 - Without a valid API key you will not be able to download anything not visible in the default guest view.
 - Copy your API key from [https://derpibooru.org/users/edit](https://derpibooru.org/users/edit)
 - Past it to the appropriate line in the `derpibooru_dl_config.cfg` inside the `config` folder. (e.g. `api_key = Ap1k3Yh3Re`)
-- Put the tags you want to download in `derpibooru_dl_tag_list.txt` always in the `config` file, one tag per line e.g.
-
+- Put the tags you want to download in `derpibooru_dl_tag_list.txt` in the `config` folder, with one tag per line. e.g.
 ````
 Tag1
 tag_2
 tag+3
 T4g 4
 ````
-- Run your derpibooru_dl like before again to download your set.
-- After a tag has been processed, it will be written to the file `derpibooru_done_list.txt`, again in the `config` folder.
+- Run derpibooru_dl again to download your set.
+- After a tag has been processed, it will be written to the file `derpibooru_done_list.txt`, in the `config` folder.
 - Derpibooru-dl will close itself after it has finished.
 
 
