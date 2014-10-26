@@ -233,28 +233,32 @@ def sanitizepath(pathin):
 
 
 def import_list(listfilename="ERROR.txt"):
-    nameslist = []
-    if os.path.exists(listfilename):#check if there is a list
-        nameslist = []#make an empty list
-        listfile = open(listfilename, 'rU')
-        for line in listfile:
-            if line[0] != '#' and line[0] != '\n':#skip likes starting with '#' and the newline character
-                if line[-1] == '\n':#remove trailing newline if it exists
+    if os.path.exists(listfilename):# Check if there is a list
+        query_list = []# Make an empty list
+        list_file = open(listfilename, 'rU')
+        for line in list_file:
+            if line[0] != '#' and line[0] != '\n':# Skip likes starting with '#' and the newline character
+                if line[-1] == '\n':# Remove trailing newline if it exists
                     stripped_line = line[:-1]
                 else:
-                    stripped_line = line#if no trailing newline exists, we dont need to strip it
+                    stripped_line = line# If no trailing newline exists, we dont need to strip it
                 replaced_line = re.sub(" ", '+', stripped_line)# Replace spaces with plusses
-                nameslist.append(replaced_line)#add the username to the list
-        listfile.close()
-        return nameslist
-    else:#if there is no list, make one
-        listfile = open(listfilename, 'w')
-        listfile.write('#add one tag per line, comments start with a #, nothing but tag on a lise that isnt a comment\n')
-        listfile.close()
+                query_list.append(replaced_line)# Add the username to the list
+        list_file.close()
+        return query_list
+    else: # If there is no list, make one
+        new_file_text = ("# Add one query per line, Full derpibooru search syntax MAY be available. Enter queries exactly as you would on the site.\n"
+        + "# Any line that starts with a hash symbol (#) will be ignored.\n"
+        + "Search syntax help is available at https://derpibooru.org/search/syntax \n"
+        + "# Example 1: -(pinkamena, +grimdark)\n"
+        + "# Example 2: reversalis")
+        list_file = open(listfilename, 'w')
+        list_file.write(new_file_text)
+        list_file.close()
         return []
 
 
-def append_list(lines,list_file_path="weasyl_done_list.txt",initial_text="# List of completed items.\n",overwrite=False):
+def append_list(lines,list_file_path="done_list.txt",initial_text="# List of completed items.\n",overwrite=False):
     # Append a string or list of strings to a file; If no file exists, create it and append to the new file.
     # Strings will be seperated by newlines.
     # Make sure we're saving a list of strings.
@@ -281,15 +285,16 @@ def append_list(lines,list_file_path="weasyl_done_list.txt",initial_text="# List
 
 class config_handler():
     def __init__(self,settings_path):
+        self.settings_path = settings_path
         # Make sure settings folder exists
-        settings_folder = os.path.dirname(settings_path)
+        settings_folder = os.path.dirname(self.settings_path)
         if settings_folder is not None:
             if not os.path.exists(settings_folder):
                 os.makedirs(settings_folder)
         # Setup settings, these are static
         self.set_defaults()
-        self.load_file(settings_path)
-        self.save_settings(settings_path)
+        self.load_file(self.settings_path)
+        self.save_settings(self.settings_path)
         # Setup things that can change during program use
         self.load_deleted_submission_list()# list of submissions that are known to have been deleted
         return
@@ -320,6 +325,10 @@ class config_handler():
         self.move_on_fail_verification = False # Should files be moved if verification of a submission fails?
         self.save_comments = False # Should comments be saved, uses more resources.
 
+        # General settings
+        self.show_menu = True # Should the text based menu system be used?
+        self.hold_window_open = True # Should the window be kept open after all tasks are done?
+
         # Internal variables, these are set through this code only
         self.resume_file_path = os.path.join("config","resume.pkl")
         self.pointer_file_path = os.path.join("config","dl_everything_pointer.pkl")
@@ -329,9 +338,6 @@ class config_handler():
         self.combined_download_folder_name = "combined_downloads"# Name of subfolder to use when saving to only one folder
         self.max_download_attempts = 10 # Number of times to retry a download before skipping
         self.verification_fail_output_path = "failed_verification"
-        # /derpibooru_dl.py
-        # split_to_tag_folders.py
-        # /split_to_tag_folders.py
         return
 
     def load_file(self,settings_path):
@@ -348,75 +354,84 @@ class config_handler():
             pass
         # Download Settings
         try:
-            self.reverse = config.getboolean('Settings', 'reverse')
+            self.reverse = config.getboolean('Download', 'reverse')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.output_folder = config.get('Settings', 'output_folder')
+            self.output_folder = config.get('Download', 'output_folder')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.download_submission_ids_list = config.getboolean('Settings', 'download_submission_ids_list')
+            self.download_submission_ids_list = config.getboolean('Download', 'download_submission_ids_list')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.download_query_list = config.getboolean('Settings', 'download_query_list')
+            self.download_query_list = config.getboolean('Download', 'download_query_list')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.output_long_filenames = config.getboolean('Settings', 'output_long_filenames')
+            self.output_long_filenames = config.getboolean('Download', 'output_long_filenames')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.input_list_path = config.get('Settings', 'input_list_path')
+            self.input_list_path = config.get('Download', 'input_list_path')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.done_list_path = config.get('Settings', 'done_list_path')
+            self.done_list_path = config.get('Download', 'done_list_path')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.failed_list_path = config.get('Settings', 'failed_list_path')
+            self.failed_list_path = config.get('Download', 'failed_list_path')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.save_to_query_folder = config.getboolean('Settings', 'save_to_query_folder')
+            self.save_to_query_folder = config.getboolean('Download', 'save_to_query_folder')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.skip_downloads = config.getboolean('Settings', 'skip_downloads')
+            self.skip_downloads = config.getboolean('Download', 'skip_downloads')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.sequentially_download_everything = config.getboolean('Settings', 'sequentially_download_everything')
+            self.sequentially_download_everything = config.getboolean('Download', 'sequentially_download_everything')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.go_backwards_when_using_sequentially_download_everything = config.getboolean('Settings', 'go_backwards_when_using_sequentially_download_everything')
+            self.go_backwards_when_using_sequentially_download_everything = config.getboolean('Download', 'go_backwards_when_using_sequentially_download_everything')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.download_last_week = config.getboolean('Settings', 'download_last_week')
+            self.download_last_week = config.getboolean('Download', 'download_last_week')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.skip_glob_duplicate_check = config.getboolean('Settings', 'skip_glob_duplicate_check')
+            self.skip_glob_duplicate_check = config.getboolean('Download', 'skip_glob_duplicate_check')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.skip_known_deleted = config.getboolean('Settings', 'skip_known_deleted')
+            self.skip_known_deleted = config.getboolean('Download', 'skip_known_deleted')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.deleted_submissions_list_path = config.get('Settings', 'deleted_submissions_list_path')
+            self.deleted_submissions_list_path = config.get('Download', 'deleted_submissions_list_path')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.move_on_fail_verification = config.getboolean('Settings', 'move_on_fail_verification')
+            self.move_on_fail_verification = config.getboolean('Download', 'move_on_fail_verification')
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.save_comments = config.getboolean('Settings', 'save_comments')
+            self.save_comments = config.getboolean('Download', 'save_comments')
+        except ConfigParser.NoOptionError:
+            pass
+        # General settings
+        try:
+            self.show_menu = config.getboolean('General', 'show_menu')
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            self.hold_window_open = config.getboolean('General', 'hold_window_open')
         except ConfigParser.NoOptionError:
             pass
         return
@@ -426,25 +441,28 @@ class config_handler():
         config = ConfigParser.RawConfigParser()
         config.add_section('Login')
         config.set('Login', 'api_key', self.api_key )
-        config.add_section('Settings')
-        config.set('Settings', 'reverse', str(self.reverse) )
-        config.set('Settings', 'output_folder', self.output_folder )
-        config.set('Settings', 'download_submission_ids_list', str(self.download_submission_ids_list) )
-        config.set('Settings', 'download_query_list', str(self.download_query_list) )
-        config.set('Settings', 'output_long_filenames', str(self.output_long_filenames) )
-        config.set('Settings', 'input_list_path', self.input_list_path )
-        config.set('Settings', 'done_list_path', self.done_list_path )
-        config.set('Settings', 'failed_list_path', self.failed_list_path )
-        config.set('Settings', 'save_to_query_folder', str(self.save_to_query_folder) )
-        config.set('Settings', 'skip_downloads', str(self.skip_downloads) )
-        config.set('Settings', 'sequentially_download_everything', str(self.sequentially_download_everything) )
-        config.set('Settings', 'go_backwards_when_using_sequentially_download_everything', str(self.go_backwards_when_using_sequentially_download_everything) )
-        config.set('Settings', 'download_last_week', str(self.download_last_week) )
-        config.set('Settings', 'skip_glob_duplicate_check', str(self.skip_glob_duplicate_check) )
-        config.set('Settings', 'skip_known_deleted', str(self.skip_known_deleted) )
-        config.set('Settings', 'deleted_submissions_list_path', str(self.deleted_submissions_list_path) )
-        config.set('Settings', 'move_on_fail_verification', str(self.move_on_fail_verification) )
-        config.set('Settings', 'save_comments', str(self.save_comments) )
+        config.add_section('Download')
+        config.set('Download', 'reverse', str(self.reverse) )
+        config.set('Download', 'output_folder', self.output_folder )
+        config.set('Download', 'download_submission_ids_list', str(self.download_submission_ids_list) )
+        config.set('Download', 'download_query_list', str(self.download_query_list) )
+        config.set('Download', 'output_long_filenames', str(self.output_long_filenames) )
+        config.set('Download', 'input_list_path', self.input_list_path )
+        config.set('Download', 'done_list_path', self.done_list_path )
+        config.set('Download', 'failed_list_path', self.failed_list_path )
+        config.set('Download', 'save_to_query_folder', str(self.save_to_query_folder) )
+        config.set('Download', 'skip_downloads', str(self.skip_downloads) )
+        config.set('Download', 'sequentially_download_everything', str(self.sequentially_download_everything) )
+        config.set('Download', 'go_backwards_when_using_sequentially_download_everything', str(self.go_backwards_when_using_sequentially_download_everything) )
+        config.set('Download', 'download_last_week', str(self.download_last_week) )
+        config.set('Download', 'skip_glob_duplicate_check', str(self.skip_glob_duplicate_check) )
+        config.set('Download', 'skip_known_deleted', str(self.skip_known_deleted) )
+        config.set('Download', 'deleted_submissions_list_path', str(self.deleted_submissions_list_path) )
+        config.set('Download', 'move_on_fail_verification', str(self.move_on_fail_verification) )
+        config.set('Download', 'save_comments', str(self.save_comments) )
+        config.add_section('General')
+        config.set('General', 'show_menu', str(self.show_menu) )
+        config.set('General', 'hold_window_open', str(self.hold_window_open) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
         return
@@ -913,6 +931,7 @@ def get_latest_submission_id(settings):
 
 def download_this_weeks_submissions(settings):
     """Download (about) one weeks worth of the most recent submissions"""
+    logging.info("Now downloading the last week's submissions.")
     # Get starting number
     latest_submission_id = get_latest_submission_id(settings)
     # Calculate ending number
@@ -925,7 +944,7 @@ def download_this_weeks_submissions(settings):
 
 def download_everything(settings):
     """Start downloading everything or resume downloading everything"""
-    logging.info("Downloading everything by range")
+    logging.info("Now downloading all submissions on the site")
     # Start downloading everything
     latest_submission_id = get_latest_submission_id(settings)
     start_number = 0
@@ -990,7 +1009,7 @@ def download_range(settings,start_number,finish_number):
 
 
 def download_ids(settings,query_list,folder):
-    # API for this is depricated!
+    logging.info("Now downloading user set IDs.")
     submission_ids = []
     for query in query_list:
         # remove invalid items
@@ -1020,6 +1039,7 @@ def process_query(settings,search_query):
 
 
 def download_query_list(settings,query_list):
+    logging.info("Now downloading user set tags/queries")
     counter = 0
     for search_query in query_list:
         counter += 1
@@ -1243,17 +1263,109 @@ def verify_api_key(api_key):
     return True
 
 
+def print_menu_options():
+    """Main info text for menu"""
+    print "1. Download the last week or so's submissions."
+    print "2. Enter and download a range of submission IDs."
+    print "3. Enter and download the results of a search query"
+    print "4. Download the results of each query and submission ID in the download list"
+    print "5. Run downloads automatically based on settings file."
+    print "X. Exit."
+    return
+
+
+def menu_range_prompt(settings,input_file_list):
+    """Download user specified range"""
+    print "Enter ID to start from then press enter. Leave blank to cancel."
+    start_id_input = raw_input()
+    try:
+        start_id = int(start_id_input)
+    except ValueError, err:
+        logging.debug("Canceled.")
+        return
+    print "Enter ID to stop at then press enter. Leave blank to cancel."
+    stop_id_input = raw_input()
+    try:
+        stop_id = int(stop_id_input)
+    except ValueError, err:
+        logging.debug("Canceled.")
+        return
+    download_range(settings,start_id,stop_id)
+    return
+
+
+def console_menu(settings,input_file_list):
+    """Simple text based menu"""
+    menu_open = True
+    while menu_open:
+        print_menu_options()
+        print "Enter an option then press return"
+        menu_data = raw_input()
+        logging.debug("Menu user input:"+repr(menu_data))
+        if menu_data == "1":
+            # Download the last week's submissions
+            download_this_weeks_submissions(settings)
+            continue
+        elif menu_data == "2":
+            # Download user specified range
+            menu_range_prompt(settings,input_file_list)
+            continue
+        elif menu_data == "3":
+            # Download a user specified query.
+            print "Enter your search query then press enter. Leave empty to cancel."
+            search_query = raw_input()
+            logging.debug("Query: "+reprsearch_query())
+            if len(search_query) > 0:
+                process_query(settings,search_query)
+                append_list(search_query, settings.done_list_path)
+            continue
+        elif menu_data == "4":
+            # Run over download list
+            download_query_list(settings,input_file_list)
+            continue
+        elif menu_data == "5":
+            # Run automatic batch mode
+            run_batch_mode(settings,input_file_list)
+            continue
+        elif menu_data in "xX":
+            logging.info("Exiting menu.")
+            return
+        else:
+            print "Invalid selection, try again."
+            continue
+    return
+
+
+def run_batch_mode(settings,input_file_list):
+    """Run downloads based on settings without the need for user interaction"""
+    # Begin new download operations
+    # Ordered based on expected time to complete operations.
+    # Download individual submissions
+    if settings.download_submission_ids_list:
+        download_ids(settings,input_file_list,"from_list")
+    # Download last week mode (~7,000 items)
+    if settings.download_last_week:
+        download_this_weeks_submissions(settings)
+    # Process each search query
+    if settings.download_query_list:
+        download_query_list(settings,input_file_list)
+    # Download evrything mode
+    if settings.sequentially_download_everything:
+        download_everything(settings)
+    return
+
+
 def main():
     # Load settings
     settings = config_handler(os.path.join("config","derpibooru_dl_config.cfg"))
     verify_api_key(settings.api_key)
-    if settings.api_key == "Replace_this_with_your_API_key": # Remove placeholder key
+    if verify_api_key(settings.api_key) == False: # Remove bad keys
         logging.warning("No API key set, weird things may happen.")
         settings.api_key = ""
     # Load tag list
-    raw_input_list = import_list(settings.input_list_path)
+    raw_input_file_list = import_list(settings.input_list_path)
     # Fix input list
-    input_list = convert_tag_list_to_search_string_list(settings,raw_input_list)
+    input_file_list = convert_tag_list_to_search_string_list(settings, raw_input_file_list)
     #submission_list = import_list("config\\derpibooru_dl_submission_id_list.txt")
     # DEBUG
     #download_submission(settings,"DEBUG","263139")
@@ -1271,29 +1383,21 @@ def main():
         # Skip everything before and including resumed tag
         logging.info("Skipping all items before the resumed tag: "+resumed_query)
         #logging.debug(str(tag_list))
-        input_list = input_list[( input_list.index(resumed_query) + 1 ):]
-        #logging.debug(str(input_list))
+        input_file_list = input_file_list[( input_file_list.index(resumed_query) + 1 ):]
+        #logging.debug(str(input_file_list))
     # Resume range operations
     resume_range_download(settings)
-    # Begin new download operations
-    # Ordered based on expected time to complete operations.
-    # Download individual submissions
-    if settings.download_submission_ids_list:
-        logging.info("Now downloading user set IDs.")
-        download_ids(settings,input_list,"from_list")
-    # Download last week mode (~7,000 items)
-    if settings.download_last_week:
-        logging.info("Now downloading the last week's submissions.")
-        download_this_weeks_submissions(settings)
-    # Process each search query
-    if settings.download_query_list:
-        logging.info("Now downloading user set tags/queries")
-        download_query_list(settings,input_list)
-    # Download evrything mode
-    if settings.sequentially_download_everything:
-        logging.info("Now downloading all submissions on the site")
-        download_everything(settings)
+    # Show menu if option set
+    if settings.show_menu:
+        # Interactive mode.
+        console_menu(settings,input_file_list)
+    else:
+        # Automatic batch mode.
+        run_batch_mode(settings,input_file_list)
     logging.info("All tasks done, exiting.")
+    if settings.hold_window_open:
+        logging.info("Press enter to close window.")
+        raw_input()
     return
 
 
@@ -1310,4 +1414,3 @@ if __name__ == '__main__':
         logger.critical(str( type(err) ) )
         logging.exception(err)
     logging.info( "Program finished.")
-    #raw_input("Press return to close")
