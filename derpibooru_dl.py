@@ -495,6 +495,7 @@ def decode_json(json_string):
     Reraise unknown cases for caught exceptions"""
     assert_is_string(json_string)
     try:
+        save_file(os.path.join("debug","last_json.json"), json_string, True)
         json_data = json.loads(json_string)
         return json_data
     except ValueError, err:
@@ -665,9 +666,9 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
     if settings.skip_glob_duplicate_check:
         return False
     # Generate expected filename pattern
-    expected_submission_filename = settings.filename_prefix+submission_id+".*"
+    submission_filename_pattern = "*"+submission_id+".*"
     # Generate search pattern
-    glob_string = os.path.join(settings.output_folder, "*", expected_submission_filename)
+    glob_string = os.path.join(settings.output_folder, "*", submission_filename_pattern)
     # Use glob to check for existing files matching the expected pattern
     #logging.debug("CALLING glob.glob, local vars: "+ repr(locals()))
     glob_matches = glob.glob(glob_string)
@@ -678,6 +679,10 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
     else:
         # If there is an existing version:
         for glob_match in glob_matches:
+            # Skip any submission with the wrong ID
+            match_submission_id = find_id_from_filename(settings, glob_match)
+            if match_submission_id != submission_id:
+                continue
             # If there is an existing version in the output path, nothing needs to be copied
             if output_folder in glob_match:
                 return False
@@ -783,12 +788,15 @@ def download_submission(settings,search_query,submission_id):
             return
         # Extract needed info from JSON
         image_url = json_dict["image"]
-        image_filename = json_dict["file_name"]
         image_file_ext = json_dict["original_format"]
         image_height = json_dict["height"]
         image_width = json_dict["width"]
         # Build image output filenames
         if settings.output_long_filenames:
+            # Grab the filename from the url by throwing away everything before the last forwardslash
+            image_filename_crop_regex = """ .+\/(.+)"""
+            id_search = re.search(image_filename_crop_regex, image_url, re.IGNORECASE|re.DOTALL)
+            image_filename = id_search.group(1)
             image_output_filename = settings.filename_prefix+image_filename+"."+image_file_ext
         else:
             image_output_filename = settings.filename_prefix+submission_id+"."+image_file_ext
@@ -1231,11 +1239,21 @@ def find_id_from_filename(settings, file_path):
     """Extract submission ID from a file path or filename"""
     filename = os.path.basename(file_path)
     if filename[-5:].lower() == ".json".lower():# If the path ends in .json
+        # JSON files always use the ID as the filename
+        # 751715.json
         submission_id = filename[:-5]
         return submission_id
     else: # Not JSON
-        id_and_ext = filename.split(settings.filename_prefix)[-1]# Remove all but ID and extention
-        submission_id = id_and_ext.split(".")[0]#Remove extention
+        # Expected filename types
+        # Long derpibooru:
+        # "image":"//derpicdn.net/img/view/2014/10/27/751715__safe_twilight+sparkle_rainbow+dash_pinkie+pie_fluttershy_rarity_applejack_comic_crossover_mane+six.jpeg",
+        # Long derpibooru_dl:
+        # derpi_751715__safe_twilight+sparkle_rainbow+dash_pinkie+pie_fluttershy_rarity_applejack_comic_crossover_mane+six.jpeg
+        # Short derpibooru_dl:
+        # derpi_751715.jpeg
+        id_regex = """(\d+)(?:[_\.])"""
+        id_search = re.search(id_regex, filename, re.IGNORECASE|re.DOTALL)
+        submission_id = id_search.group(1)
         return submission_id
 
 
