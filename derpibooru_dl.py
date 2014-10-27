@@ -794,9 +794,9 @@ def download_submission(settings,search_query,submission_id):
         # Build image output filenames
         if settings.output_long_filenames:
             # Grab the filename from the url by throwing away everything before the last forwardslash
-            image_filename_crop_regex = """ .+\/(.+)"""
-            id_search = re.search(image_filename_crop_regex, image_url, re.IGNORECASE|re.DOTALL)
-            image_filename = id_search.group(1)
+            image_filename_crop_regex = """.+\/(.+)"""
+            image_filename_search = re.search(image_filename_crop_regex, image_url, re.IGNORECASE|re.DOTALL)
+            image_filename = image_filename_search.group(1)
             image_output_filename = settings.filename_prefix+image_filename+"."+image_file_ext
         else:
             image_output_filename = settings.filename_prefix+submission_id+"."+image_file_ext
