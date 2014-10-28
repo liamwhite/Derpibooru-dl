@@ -118,3 +118,4 @@ hold_window_open = True
     ````
     Notepad++ [http://www.notepad-plus-plus.org/](http://www.notepad-plus-plus.org/)
     ````
+- I've written a guide with screenshots for the windows .exe releases. [Guide link](http://evil-vortex.com/Guide_2014-10-28.pdf)
