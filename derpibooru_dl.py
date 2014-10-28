@@ -1261,24 +1261,41 @@ def verify_api_key(api_key):
     """Test to see if a given API key looks real.
     Return True if it looks okay, False if it looks bad"""
     assert(type(api_key) is type(""))# If this is not a string bad things will probably happen, and something has most likely gone wrong in the import code
+    key_is_valid = True
     # Test for the default string
-    if api_key =="Replace_this_with_your_API_key":
-        return False
+    if api_key == "Replace_this_with_your_API_key":
+        logging.error("API key was default (No key was set).")
+        key_is_valid = False
     # Test length of key
     # [21:07] <@CloverTheClever> Ctrl-S: it'll be alphanumeric and fixed size iirc
     # Known valid lengths: 20
-    if not (len(api_key) == 20):
-        logging.error("API key length invalid.")
-        return False
+    if (len(api_key) != 20):
+        logging.error("API key length invalid. Should be 20 chars. Length: "+str(len(api_key)))
+        key_is_valid = False
     # Test if any characters outside those allowed are in the string (Assuming alphanumeric ascii only)
     # http://stackoverflow.com/questions/89909/how-do-i-verify-that-a-string-only-contains-letters-numbers-underscores-and-da
     allowed_characters = string.ascii_letters + string.digits
     if set(api_key) - set(allowed_characters): # Remove any characters that are allowed, if any characters remain we have invalid characters in the string.
         logging.error(" API key contains invalid characters.")
-        return False
+        key_is_valid = False
+        # Check ig it's the first or last bit that's wrong.
+        if set(api_key[:5]) - set(allowed_characters):
+            logging.error("Problem in first 5 characters")
+        if set(api_key[-5:]) - set(allowed_characters):
+            logging.error("Problem in last 5 characters")
+    # Try actually loading something with the key. A search for "explicit" will fail if key is invalid.
+    key_test_url = "https://derpibooru.org/search.json?q=explicit&key="+api_key
+    test_response = get(key_test_url)
+    if len(test_response) <= len("""{"search":[]}"""):
+        logging.error("Search for 'explicit' failed using this key! Check key and account display settings!")
+        key_is_valid = False
+    test_response_dict = decode_json(test_response)
     # If no test has failed, we have a valid key.
-    logging.debug("API Key looks fine.")
-    return True
+    if key_is_valid:
+        logging.debug("API Key looks fine.")
+    else:
+        logging.warning("API key looks invalid!")
+    return key_is_valid # Boolean can be passed out as-is
 
 
 def print_menu_options():
@@ -1376,8 +1393,11 @@ def run_batch_mode(settings,input_file_list):
 def main():
     # Load settings
     settings = config_handler(os.path.join("config","derpibooru_dl_config.cfg"))
-    verify_api_key(settings.api_key)
-    if verify_api_key(settings.api_key) == False: # Remove bad keys
+    valid_api_key = verify_api_key(settings.api_key)
+    if not valid_api_key:
+        logging.warning("Using API key that looks bad, some images may not be available!")
+        logging.warning("Check that you entered your API key correctly.")
+    if settings.api_key == "Replace_this_with_your_API_key": # Remove unset key
         logging.warning("No API key set, weird things may happen.")
         settings.api_key = ""
     # Load tag list
