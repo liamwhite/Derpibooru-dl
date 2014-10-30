@@ -1390,6 +1390,8 @@ def run_batch_mode(settings,input_file_list):
     return
 
 
+def remove_before_last_query()
+
 def main():
     # Load settings
     settings = config_handler(os.path.join("config","derpibooru_dl_config.cfg"))
@@ -1418,11 +1420,14 @@ def main():
     logging.info("Attempting to resume any failed downloads.")
     resumed_query = resume_downloads(settings)
     if resumed_query is not False:
-        # Skip everything before and including resumed tag
-        logging.info("Skipping all items before the resumed tag: "+resumed_query)
-        #logging.debug(str(tag_list))
-        input_file_list = input_file_list[( input_file_list.index(resumed_query) + 1 ):]
-        #logging.debug(str(input_file_list))
+        if resumed_query in input_file_list
+            # Skip everything before and including resumed tag
+            logging.info("Skipping all items before the resumed tag: "+resumed_query)
+            #logging.debug(str(tag_list))
+            position_of_resumed_query = input_file_list.index(resumed_query)
+            position_to_keep_after = position_of_resumed_query + 1
+            input_file_list = input_file_list[position_to_keep_after:]
+            #logging.debug(str(input_file_list))
     # Resume range operations
     resume_range_download(settings)
     # Show menu if option set
