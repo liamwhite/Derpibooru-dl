@@ -29,6 +29,8 @@ import pickle
 import socket
 import hashlib
 import string
+import argparse
+
 
 
 # getwithinfo()
@@ -198,6 +200,7 @@ def delay(basetime,upperrandom=0):
 
 
 def sanitizepath(pathin):
+    """Do not use for derpibooru"""
     #from pathsanitizer
     #sanitize a filepath for use on windows
     #http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
@@ -232,7 +235,27 @@ def sanitizepath(pathin):
     return pathout
 
 
+def crossplatform_path_sanitize(path_to_sanitize,remove_repeats=False):
+    """Take a desired file path and chop away at it until it fits all platforms path requirements"""
+    # Remove disallowed characters
+    # http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
+    windows_bad_chars = """/\\"""
+    nix_bad_carhs = """/"""
+    all_bad_chars = set(windows_bad_chars)+set(nix_bad_carhs)
+    if remove_repeats:
+        # Remove repeated characters, such as hyphens or spaces
+        pass
+    # Shorten if above filepath length limits
+    windows_max_filepath_length = 255
+    nix_max_filepath_length = None
+    # Ensure first and last characters of path segments are not whitespace
+    path_segments = []
+
+
+
+
 def import_list(listfilename="ERROR.txt"):
+    """Read in a text file, return each line as a string in a list"""
     if os.path.exists(listfilename):# Check if there is a list
         query_list = []# Make an empty list
         list_file = open(listfilename, 'rU')
@@ -295,6 +318,7 @@ class config_handler():
         self.set_defaults()
         self.load_file(self.settings_path)
         self.save_settings(self.settings_path)
+        self.handle_command_line_arguments()
         # Setup things that can change during program use
         self.load_deleted_submission_list()# list of submissions that are known to have been deleted
         return
@@ -465,6 +489,52 @@ class config_handler():
         config.set('General', 'hold_window_open', str(self.hold_window_open) )
         with open(settings_path, 'wb') as configfile:
             config.write(configfile)
+        return
+
+    def handle_command_line_arguments(self):
+        """Handle any command line arguments"""
+        parser = argparse.ArgumentParser(description="DESCRIPTION FIELD DOES WHAT?")
+        # Define what arguments are allowed
+        menu_group = parser.add_mutually_exclusive_group()
+        menu_group.add_argument("-m", "--menu", action="store_true",help="Show text based menu.")# Show text based menu
+        menu_group.add_argument("-b", "--batch", action="store_true",help="Run in batch mode.")# Use batch mode
+        parser.add_argument("-k", "--api_key",help="API Key.")
+        parser.add_argument("-ids", "--download_submission_ids_list",help="download_submission_ids_list")
+        parser.add_argument("-queries", "--download_query_list",help="download_query_list")
+        parser.add_argument("-longfn", "--output_long_filenames",help="output_long_filenames")
+        parser.add_argument("-qf", "--save_to_query_folder",help="save_to_query_folder")
+        parser.add_argument("-skip", "--skip_downloads",help="skip_downloads")
+        parser.add_argument("--sequentially_download_everything",help="sequentially_download_everything")
+        parser.add_argument("--go_backwards_when_using_sequentially_download_everything",help="go_backwards_when_using_sequentially_download_everything")
+        parser.add_argument("-ilp", "--input_list_path",help="input_list_path")
+        parser.add_argument("--save_args_to_settings", action="store_true")# Write new settings to file
+        # Store arguments to settings
+        args = parser.parse_args()
+        if args.menu:
+            self.show_menu = True
+        elif args.batch:
+            self.show_menu = False
+        if args.api_key:
+            self.api_key = args.api_key
+        if args.download_submission_ids_list:
+            self.download_submission_ids_list = args.download_submission_ids_list
+        if args.download_query_list:
+            self.download_query_list = args.download_query_list
+        if args.output_long_filenames:
+            self.output_long_filenames = args.output_long_filenames
+        if args.save_to_query_folder:
+            self.save_to_query_folder = args.save_to_query_folder
+        if args.skip_downloads:
+            self.skip_downloads = args.skip_downloads
+        if args.sequentially_download_everything:
+            self.sequentially_download_everything = args.sequentially_download_everything
+        if args.go_backwards_when_using_sequentially_download_everything:
+            self.go_backwards_when_using_sequentially_download_everything = args.go_backwards_when_using_sequentially_download_everything
+        if args.input_list_path:
+            self.input_list_path = args.input_list_path
+        # Write to settings file if needed. Must be done last
+        if args.save_args_to_settings:
+            self.save_settings()
         return
 
     def load_deleted_submission_list(self):
@@ -1295,6 +1365,8 @@ def verify_api_key(api_key):
         logging.debug("API Key looks fine.")
     else:
         logging.warning("API key looks invalid!")
+        logging.debug("First 5 chars of key:"+repr(api_key[:5]))
+        logging.debug("First 5 chars of key:"+repr(api_key[-5:]))
     return key_is_valid # Boolean can be passed out as-is
 
 
