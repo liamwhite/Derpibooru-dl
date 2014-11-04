@@ -1344,9 +1344,12 @@ def verify_api_key(api_key):
         key_is_valid = False
     # Test if any characters outside those allowed are in the string (Assuming alphanumeric ascii only)
     # http://stackoverflow.com/questions/89909/how-do-i-verify-that-a-string-only-contains-letters-numbers-underscores-and-da
-    allowed_characters = string.ascii_letters + string.digits
-    if set(api_key) - set(allowed_characters): # Remove any characters that are allowed, if any characters remain we have invalid characters in the string.
-        logging.error(" API key contains invalid characters.")
+    # Remove any characters that are allowed, if any characters remain we have invalid characters in the string.
+    allowed_characters = string.ascii_letters + string.digits + "-"
+    invalid_characters_in_key = set(api_key) - set(allowed_characters)
+    if invalid_characters_in_key:
+        logging.error("API key contains invalid characters.")
+        logging.debug("Invalid characters found: "+repr(invalid_characters_in_key))
         key_is_valid = False
         # Check ig it's the first or last bit that's wrong.
         if set(api_key[:5]) - set(allowed_characters):
@@ -1367,6 +1370,7 @@ def verify_api_key(api_key):
         logging.warning("API key looks invalid!")
         logging.debug("First 5 chars of key:"+repr(api_key[:5]))
         logging.debug("First 5 chars of key:"+repr(api_key[-5:]))
+        print("The API key you entered is: "+api_key+" This message is not recorded to the log file.")
     return key_is_valid # Boolean can be passed out as-is
 
 
@@ -1434,7 +1438,7 @@ def console_menu(settings,input_file_list):
             # Run automatic batch mode
             run_batch_mode(settings,input_file_list)
             continue
-        elif menu_data in "xX":
+        elif (menu_data is "x") or (menu_data is "X"):
             logging.info("Exiting menu.")
             return
         else:
