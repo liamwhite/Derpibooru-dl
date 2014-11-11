@@ -131,7 +131,7 @@ def getwithinfo(url):
             #print info["content-type"]
             if "html" in info["content-type"]:
                 #print "saving debug html"
-                save_file("debug\\get_last_html.htm", reply, True)
+                save_file(os.path.join("debug","get_last_html.htm"), reply, True)
             else:
                 save_file(os.path.join("debug","get_last_not_html.txt"), reply, True)
             # Retry if empty response and not last attempt
