@@ -119,7 +119,7 @@ def getwithinfo(url):
         attemptcount = attemptcount + 1
         if attemptcount > 1:
             delay(GET_RETRY_DELAY)
-            logging.debug( "Attempt " + str(attemptcount) + " for URL: " + url )
+            logging.debug( "Attempt "+repr(attemptcount)+" for URL: "+repr(url) )
         try:
             save_file(os.path.join("debug","get_last_url.txt"), url, True)
             r = br.open(url, timeout=100)
@@ -136,16 +136,16 @@ def getwithinfo(url):
                 save_file(os.path.join("debug","get_last_not_html.txt"), reply, True)
             # Retry if empty response and not last attempt
             if (len(reply) < 1) and (attemptcount < GET_MAX_ATTEMPTS):
-                logging.error("reply too short :"+str(reply))
+                logging.error("Reply too short :"+repr(reply))
                 continue
             return reply,info
         except urllib2.HTTPError, err:
-            logging.debug(str(err))
+            logging.debug(repr(err))
             if err.code == 404:
-                logging.debug("404 error! " + str(url))
+                logging.debug("404 error! "+repr(url))
                 return
             elif err.code == 403:
-                logging.debug("403 error, ACCESS DENIED! url: "+str(url))
+                logging.debug("403 error, ACCESS DENIED! url: "+repr(url))
                 return
             elif err.code == 410:
                 logging.debug("410 error, GONE")
@@ -154,24 +154,25 @@ def getwithinfo(url):
                 save_file(os.path.join("debug","HTTPError.htm"), err.fp.read(), True)
                 continue
         except urllib2.URLError, err:
-            logging.debug(str(err))
+            logging.debug(repr(err))
             if "unknown url type:" in err.reason:
                 return
             else:
                 continue
         except httplib.BadStatusLine, err:
-            logging.debug(str(err))
+            logging.debug(repr(err))
             continue
         except httplib.IncompleteRead, err:
-            logging.debug(str(err))
+            logging.debug(repr(err))
             continue
         except mechanize.BrowserStateError, err:
-            logging.debug(str(err))
+            logging.debug(repr(err))
             continue
         except socket.timeout, err:
-            logging.debug(str( type(err) ) )
-            logging.debug(str(err))
+            logging.debug(repr( type(err) ) )
+            logging.debug(repr(err))
             continue
+    logging.critical("Too many repeated fails, exiting.")
     sys.exit()# [19:51] <@CloverTheClever> if it does it more than 10 times, quit/throw an exception upstream
 
 
@@ -179,7 +180,7 @@ def getwithinfo(url):
 def save_file(filenamein,data,force_save=False):
     if not force_save:
         if os.path.exists(filenamein):
-            logging.debug("file already exists! "+str(filenamein))
+            logging.debug("file already exists! "+repr(filenamein))
             return
     sanitizedpath = filenamein# sanitizepath(filenamein)
     foldername = os.path.dirname(sanitizedpath)
@@ -195,7 +196,7 @@ def save_file(filenamein,data,force_save=False):
 def delay(basetime,upperrandom=0):
     #replacement for using time.sleep, this adds a random delay to be sneaky
     sleeptime = basetime + random.randint(0,upperrandom)
-    #logging.debug("pausing for "+str(sleeptime)+" ...")
+    #logging.debug("pausing for "+repr(sleeptime)+" ...")
     time.sleep(sleeptime)
 
 
@@ -570,14 +571,14 @@ def decode_json(json_string):
         return json_data
     except ValueError, err:
         # Retry if bad json recieved
-        if "Unterminated string starting at:" in str(err):
+        if "Unterminated string starting at:" in repr(err):
             logging.debug("JSON data invalid, failed to decode.")
-            logging.debug(json_string)
+            logging.debug(repr(json_string))
             return
-        elif "No JSON object could be decoded" in str(err):
+        elif "No JSON object could be decoded" in repr(err):
             if len(json_string) < 20:
                 logging.debug("JSON string was too short!")
-                logging.debug(json_string)
+                logging.debug(repr(json_string))
                 return
             else:
                 logging.critical(repr(locals()))
@@ -637,7 +638,7 @@ def load_search_page(settings,search_url):
         try:
             search_page_dict = json.loads(search_page)
         except ValueError, err:
-            logging.error("Failed to read JSON on attempt "+str(attempt_counter)+"for url"+search_url)
+            logging.error("Failed to read JSON on attempt "+repr(attempt_counter)+"for url"+repr(search_url))
             logging.error( repr(locals()) )
             continue
         page_keys = search_page_dict.keys()
@@ -655,7 +656,7 @@ def load_search_page(settings,search_url):
                 item_id = item_dict["id_number"]
                 this_page_item_ids.append(str(item_id))
         except TypeError, err:
-            logging.error( str( type(err ) ) )
+            logging.error( repr( type(err ) ) )
             logging.error( repr(locals()) )
             logging.debug("saving local variables to pickle")
             save_pickle(os.path.join("debug","locals.pickle"),locals())
@@ -670,7 +671,7 @@ def search_for_query(settings,search_query):
     """Perform search for a query on derpibooru.
     Return a lost of found submission IDs"""
     assert_is_string(search_query)
-    logging.debug("Starting search for tag: "+search_query)
+    logging.debug("Starting search for tag: "+repr(search_query))
     page_counter = 0 # Init counter
     max_pages = 5000 # Saftey limit
     found_submissions = []
@@ -678,7 +679,7 @@ def search_for_query(settings,search_query):
     while page_counter <= max_pages:
         # Incriment page counter
         page_counter += 1
-        logging.debug("Scanning page "+str(page_counter)+" for query: "+search_query)
+        logging.debug("Scanning page "+repr(page_counter)+" for query: "+repr(search_query))
         # Generate page URL
         search_url = "https://derpibooru.org/search.json?q="+search_query+"&page="+str(page_counter)+"&key="+settings.api_key+"&nocomments=1&nofave=1"
         # Load and process page
@@ -758,7 +759,7 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                 return False
             else:
                 # Copy over submission file and metadata JSON
-                logging.info("Trying to copy from previous download: "+glob_match)
+                logging.info("Trying to copy from previous download: "+repr(glob_match))
                 # Check output folders exist
                 # Build expected paths
                 match_dir, match_filename = os.path.split(glob_match)
@@ -781,7 +782,7 @@ def copy_over_if_duplicate(settings,submission_id,output_folder):
                     os.makedirs(json_output_folder)
                 if not os.path.exists(output_folder):
                     os.makedirs(output_folder)
-                logging.info("Copying files for submission: "+submission_id+" from "+match_dir+" to "+output_folder)
+                logging.info("Copying files for submission: "+repr(submission_id)+" from "+repr(match_dir)+" to "+repr(output_folder))
                 # Copy over files
                 try:
                     # Copy submission file
@@ -841,7 +842,7 @@ def download_submission(settings,search_query,submission_id):
     while download_attempt_counter <= settings.max_download_attempts:
         download_attempt_counter += 1
         if download_attempt_counter > 1:
-            logging.debug("Attempt "+str(download_attempt_counter))
+            logging.debug("Attempt "+repr(download_attempt_counter))
         # Load JSON URL
         json_page = get(json_url)
         if not json_page:
@@ -853,7 +854,7 @@ def download_submission(settings,search_query,submission_id):
         # Check if submission is deleted
         if check_if_deleted_submission(json_dict):
             logging.debug("Submission was deleted.")
-            logging.debug(json_page)
+            logging.debug(repr(json_page))
             settings.update_deleted_submission_list(submission_id)
             return
         # Extract needed info from JSON
@@ -873,13 +874,13 @@ def download_submission(settings,search_query,submission_id):
         image_output_path = os.path.join(output_folder,image_output_filename)
         # Load image data
         authenticated_image_url = image_url+"?key="+settings.api_key
-        logging.debug("Loading submission image. Height:"+str(image_height)+", Width:"+str(image_width)+", URL: "+authenticated_image_url)
+        logging.debug("Loading submission image. Height:"+repr(image_height)+", Width:"+repr(image_width)+", URL: "+repr(authenticated_image_url))
         image_data = get(authenticated_image_url)
         if not image_data:
             return
         # Image should always be bigger than this, if it isn't we got a bad file
         if len(image_data) < 100:
-            logging.error("Image data was too small! "+str(image_data))
+            logging.error("Image data was too small! "+repr(image_data))
             continue
         # Save image
         save_file(image_output_path, image_data, True)
@@ -957,7 +958,7 @@ def download_submission_id_list(settings,submission_ids,query):
     submission_counter = 0
     # If no submissions to save record failure
     if len(submission_ids) == 0:
-        logging.warning("No submissions to save! Query:"+str(query))
+        logging.warning("No submissions to save! Query:"+repr(query))
         append_list(query, settings.failed_list_path, initial_text="# List of failed items.\n")
     if settings.reverse:
         logging.info("Reverse mode is active, reversing download order.")
@@ -968,7 +969,7 @@ def download_submission_id_list(settings,submission_ids,query):
         if (submission_counter % 1000) == 0:
             cropped_submission_ids = submission_ids[( submission_counter -1 ):]
             save_resume_file(settings,query,cropped_submission_ids)
-        logging.debug("Now working on submission "+str(submission_counter)+" of "+str(len(submission_ids) )+" : "+submission_id+" for: "+query )
+        logging.info("Now working on submission "+repr(submission_counter)+" of "+repr(len(submission_ids) )+" : "+repr(submission_id)+" for: "+repr(query) )
         # Try downloading each submission
         download_submission(settings, query, submission_id)
         print "\n\n"
@@ -1003,7 +1004,7 @@ def get_latest_submission_id(settings):
     latest_submissions = load_search_page(settings,search_url)
     ordered_latest_submissions = sorted(latest_submissions)
     latest_submission_id = int(ordered_latest_submissions[0])
-    logging.debug("Most recent submission ID:"+str(latest_submission_id))
+    logging.debug("Most recent submission ID:"+repr(latest_submission_id))
     return latest_submission_id
 
 
@@ -1015,7 +1016,7 @@ def download_this_weeks_submissions(settings):
     # Calculate ending number
     one_weeks_submissions_number = 1000 * 7 # less than 1000 per day
     finish_number = latest_submission_id - one_weeks_submissions_number  # Add a thousand to account for new submissions added during run
-    logging.info("Downloading the last "+str(one_weeks_submissions_number)+" submissions. Starting at "+str(latest_submission_id)+" and stopping at "+str(finish_number))
+    logging.info("Downloading the last "+repr(one_weeks_submissions_number)+" submissions. Starting at "+repr(latest_submission_id)+" and stopping at "+repr(finish_number))
     download_range(settings,latest_submission_id,finish_number)
     return
 
@@ -1060,7 +1061,7 @@ def download_range(settings,start_number,finish_number):
     assert(type(finish_number) is type(1))# Must be integer
     assert(type(start_number) is type(1))# Must be integer
     total_submissions_to_attempt = abs(finish_number - start_number)
-    logging.info("Downloading range: "+str(start_number)+" to "+str(finish_number))
+    logging.info("Downloading range: "+repr(start_number)+" to "+repr(finish_number))
     # Iterate over range of id numbers
     submission_pointer = start_number
     loop_counter = 0
@@ -1072,7 +1073,7 @@ def download_range(settings,start_number,finish_number):
         # Only save pickle every 1000 items to help avoid pickle corruption
         if (submission_pointer % 1000) == 0:
             save_pointer_file(settings, submission_pointer, finish_number)
-        logging.debug("Now working on submission "+str(loop_counter)+" of "+str(total_submissions_to_attempt)+", ID: "+str(submission_pointer)+" for range download mode" )
+        logging.info("Now working on submission "+repr(loop_counter)+" of "+repr(total_submissions_to_attempt)+", ID: "+repr(submission_pointer)+" for range download mode" )
         # Try downloading each submission
         download_submission(settings, "RANGE_MODE", submission_pointer)
         print "\n\n"
@@ -1121,7 +1122,7 @@ def download_query_list(settings,query_list):
     counter = 0
     for search_query in query_list:
         counter += 1
-        logging.info("Now proccessing query "+str(counter)+" of "+str(len(query_list))+": "+search_query)
+        logging.info("Now proccessing query "+repr(counter)+" of "+repr(len(query_list))+": "+repr(search_query))
         process_query(settings,search_query)
         append_list(search_query, settings.done_list_path)
     return
@@ -1154,7 +1155,7 @@ def convert_query_for_path(settings,query):
 def verify_folder(settings,target_folder):
     """Compare ID number and SHA512 hashes from submission JSON against their submission files,
      moving those that don't match to another folder"""
-    logging.info("Verifying "+target_folder)
+    logging.info("Verifying "+repr(target_folder))
     files_list = walk_for_file_paths(target_folder)
     if len(files_list) < 1:
         logging.error("No files to verify!")
@@ -1164,13 +1165,13 @@ def verify_folder(settings,target_folder):
     fail_count = 0
     for file_path in files_list:
         counter += 1
-        logging.info("Verifying submission "+str(counter)+" of "+str(len(files_list))+" "+file_path)
+        logging.info("Verifying submission "+repr(counter)+" of "+repr(len(files_list))+" "+repr(file_path))
         last_status = verify_saved_submission(settings,file_path)
         if last_status is True:
             pass_count += 1
         elif last_status is False:
             fail_count += 1
-    logging.info("Finished verification with "+str(pass_count)+" PASSED and "+str(fail_count)+" FAILED for "+target_folder)
+    logging.info("Finished verification with "+repr(pass_count)+" PASSED and "+repr(fail_count)+" FAILED for "+repr(target_folder))
     return
 
 
@@ -1178,7 +1179,7 @@ def walk_for_file_paths(start_path):
     """Use os.walk to collect a list of paths to files mathcing input parameters.
     Takes in a starting path and a list of patterns to check against filenames
     Patterns follow fnmatch conventions."""
-    logging.debug("Starting walk. start_path:" + start_path)
+    logging.debug("Starting walk. start_path:"+repr(start_path))
     assert(type(start_path) == type(""))
     matches = []
     for root, dirs, files in os.walk(start_path):
@@ -1188,10 +1189,10 @@ def walk_for_file_paths(start_path):
         for filename in files:
             c += 1
             if (c % 1000) == 0:
-                logging.debug("File # "+str(c)+": "+filename)
+                logging.debug("File # "+repr(c)+": "+repr(filename))
             match = os.path.join(root,filename)
             matches.append(match)
-        logging.debug("end folder")
+        logging.debug("End folder")
     logging.debug("Finished walk.")
     return matches
 
@@ -1261,7 +1262,7 @@ def verify_saved_submission(settings,target_file_path):
             buf = afile.read(BLOCKSIZE)
     file_hash = u"" + hasher.hexdigest()# convert to unicode
     if json_hash != file_hash:
-        logging.error("Image hash did not match JSON "+submission_path)
+        logging.error("Image hash did not match JSON "+repr(submission_path))
         logging.debug(repr(file_hash))
         logging.debug(repr(json_hash))
         failed_test = True
@@ -1269,21 +1270,21 @@ def verify_saved_submission(settings,target_file_path):
     # Image filename
     id_from_image_filename = find_id_from_filename(settings, submission_path)
     if id_from_json != id_from_image_filename:
-        logging.error("Image filename did not match JSON ID for "+submission_path)
-        logging.debug(id_from_json+" vs "+id_from_image_filename)
+        logging.error("Image filename did not match JSON ID for "+repr(submission_path))
+        logging.debug(repr(id_from_json)+" vs "+repr(id_from_image_filename))
         failed_test = True
     # JSON filename
     id_from_json_filename = find_id_from_filename(settings, json_path)
     if id_from_json != id_from_json_filename:
-        logging.error("JSON filename did not match JSON ID "+json_path)
+        logging.error("JSON filename did not match JSON ID "+repr(json_path))
         failed_test = True
     # End of tests
     if failed_test is True:
         # Move if any test was failed
-        logging.error("Verification FAIL: "+target_file_path)
+        logging.error("Verification FAIL: "+repr(target_file_path))
         logging.debug(repr(locals()))
         if settings.move_on_fail_verification:
-            logging.info("Moving sumbission and metadata to "+settings.verification_fail_output_path)
+            logging.info("Moving sumbission and metadata to "+repr(settings.verification_fail_output_path))
             try:
                 # Move submission file
                 if os.path.exists(submission_path):
@@ -1301,7 +1302,7 @@ def verify_saved_submission(settings,target_file_path):
                 logging.exception(err)
                 return False
     else:
-        logging.info("Verification PASS: "+target_file_path)
+        logging.info("Verification PASS: "+repr(target_file_path))
         return True
 
 
@@ -1340,7 +1341,7 @@ def verify_api_key(api_key):
     # [21:07] <@CloverTheClever> Ctrl-S: it'll be alphanumeric and fixed size iirc
     # Known valid lengths: 20
     if (len(api_key) != 20):
-        logging.error("API key length invalid. Should be 20 chars. Length: "+str(len(api_key)))
+        logging.error("API key length invalid. Should be 20 chars. Length: "+repr(len(api_key)))
         key_is_valid = False
     # Test if any characters outside those allowed are in the string (Assuming alphanumeric ascii only)
     # http://stackoverflow.com/questions/89909/how-do-i-verify-that-a-string-only-contains-letters-numbers-underscores-and-da
@@ -1392,14 +1393,14 @@ def menu_range_prompt(settings,input_file_list):
     try:
         start_id = int(start_id_input)
     except ValueError, err:
-        logging.debug("Canceled.")
+        logging.info("Canceled.")
         return
     print "Enter ID to stop at then press enter. Leave blank to cancel."
     stop_id_input = raw_input()
     try:
         stop_id = int(stop_id_input)
     except ValueError, err:
-        logging.debug("Canceled.")
+        logging.info("Canceled.")
         return
     download_range(settings,start_id,stop_id)
     return
@@ -1471,8 +1472,8 @@ def remove_before_last_query(resumed_query,input_file_list):
     if resumed_query is not False:
         if resumed_query in input_file_list:
             # Skip everything before and including resumed tag
-            logging.info("Skipping all items before the resumed tag: "+resumed_query)
-            #logging.debug(str(tag_list))
+            logging.info("Skipping all items before the resumed tag: "+repr(resumed_query))
+            #logging.debug(repr(tag_list))
             position_of_resumed_query = input_file_list.index(resumed_query)
             position_to_keep_after = position_of_resumed_query + 1
             input_file_list = input_file_list[position_to_keep_after:]
@@ -1533,6 +1534,6 @@ if __name__ == '__main__':
     except Exception, err:
         # Log exceptions
         logger.critical("Unhandled exception!")
-        logger.critical(str( type(err) ) )
+        logger.critical(repr( type(err) ) )
         logging.exception(err)
     logging.info( "Program finished.")
