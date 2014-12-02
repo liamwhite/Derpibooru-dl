@@ -54,7 +54,7 @@ def setup_logging(log_file_path):
             os.makedirs(log_file_folder)
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     fh = logging.FileHandler(log_file_path)
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(formatter)
@@ -63,7 +63,7 @@ def setup_logging(log_file_path):
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    logging.debug('Logging started.')
+    logging.debug("Logging started.")
     return
 
 
@@ -220,9 +220,9 @@ def sanitizepath(pathin):
     #sanitize segments
     precessedsegments = []
     for segment in segments:
-        s0 = re.sub('[^A-Za-z0-9\ \.\_]+', '-', segment)#remove all non-alphanumeric
+        s0 = re.sub("[^A-Za-z0-9\ \.\_]+", "-", segment)#remove all non-alphanumeric
         s1 = s0.strip()#strip whitespace so it doesn't get turned into hyphens
-        s2 = re.sub('[<>:"/\|?*]+', '-',s1)#remove forbidden characters
+        s2 = re.sub("[<>:"/\|?*]+", "-",s1)#remove forbidden characters
         s3 = s2.strip()#strip whitespace
         s4 = s3.strip(".-")#strip characters that shouldn't be at ends of filenames
         s5 = re.sub(r"\ +", " ", s4)#remove repeated spaces
@@ -259,14 +259,14 @@ def import_list(listfilename="ERROR.txt"):
     """Read in a text file, return each line as a string in a list"""
     if os.path.exists(listfilename):# Check if there is a list
         query_list = []# Make an empty list
-        list_file = open(listfilename, 'rU')
+        list_file = open(listfilename, "rU")
         for line in list_file:
-            if line[0] != '#' and line[0] != '\n':# Skip likes starting with '#' and the newline character
-                if line[-1] == '\n':# Remove trailing newline if it exists
+            if line[0] != "#" and line[0] != "\n":# Skip likes starting with '#' and the newline character
+                if line[-1] == "\n":# Remove trailing newline if it exists
                     stripped_line = line[:-1]
                 else:
                     stripped_line = line# If no trailing newline exists, we dont need to strip it
-                replaced_line = re.sub(" ", '+', stripped_line)# Replace spaces with plusses
+                replaced_line = re.sub(" ", "+", stripped_line)# Replace spaces with plusses
                 query_list.append(replaced_line)# Add the username to the list
         list_file.close()
         return query_list
@@ -276,7 +276,7 @@ def import_list(listfilename="ERROR.txt"):
         + "Search syntax help is available at https://derpibooru.org/search/syntax \n"
         + "# Example 1: -(pinkamena, +grimdark)\n"
         + "# Example 2: reversalis")
-        list_file = open(listfilename, 'w')
+        list_file = open(listfilename, "w")
         list_file.write(new_file_text)
         list_file.close()
         return []
@@ -374,89 +374,89 @@ class config_handler():
         # derpibooru_dl.py
         # Login
         try:
-            self.api_key = config.get('Login', 'api_key')
+            self.api_key = config.get("Login", "api_key")
         except ConfigParser.NoOptionError:
             pass
         # Download Settings
         try:
-            self.reverse = config.getboolean('Download', 'reverse')
+            self.reverse = config.getboolean("Download", "reverse")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.output_folder = config.get('Download', 'output_folder')
+            self.output_folder = config.get("Download", "output_folder")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.download_submission_ids_list = config.getboolean('Download', 'download_submission_ids_list')
+            self.download_submission_ids_list = config.getboolean("Download", "download_submission_ids_list")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.download_query_list = config.getboolean('Download', 'download_query_list')
+            self.download_query_list = config.getboolean("Download", "download_query_list")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.output_long_filenames = config.getboolean('Download', 'output_long_filenames')
+            self.output_long_filenames = config.getboolean("Download", "output_long_filenames")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.input_list_path = config.get('Download', 'input_list_path')
+            self.input_list_path = config.get("Download", "input_list_path")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.done_list_path = config.get('Download', 'done_list_path')
+            self.done_list_path = config.get("Download", "done_list_path")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.failed_list_path = config.get('Download', 'failed_list_path')
+            self.failed_list_path = config.get("Download", "failed_list_path")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.save_to_query_folder = config.getboolean('Download', 'save_to_query_folder')
+            self.save_to_query_folder = config.getboolean("Download", "save_to_query_folder")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.skip_downloads = config.getboolean('Download', 'skip_downloads')
+            self.skip_downloads = config.getboolean("Download", "skip_downloads")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.sequentially_download_everything = config.getboolean('Download', 'sequentially_download_everything')
+            self.sequentially_download_everything = config.getboolean("Download", "sequentially_download_everything")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.go_backwards_when_using_sequentially_download_everything = config.getboolean('Download', 'go_backwards_when_using_sequentially_download_everything')
+            self.go_backwards_when_using_sequentially_download_everything = config.getboolean("Download", "go_backwards_when_using_sequentially_download_everything")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.download_last_week = config.getboolean('Download', 'download_last_week')
+            self.download_last_week = config.getboolean("Download", "download_last_week")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.skip_glob_duplicate_check = config.getboolean('Download', 'skip_glob_duplicate_check')
+            self.skip_glob_duplicate_check = config.getboolean("Download", "skip_glob_duplicate_check")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.skip_known_deleted = config.getboolean('Download', 'skip_known_deleted')
+            self.skip_known_deleted = config.getboolean("Download", "skip_known_deleted")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.deleted_submissions_list_path = config.get('Download', 'deleted_submissions_list_path')
+            self.deleted_submissions_list_path = config.get("Download", "deleted_submissions_list_path")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.move_on_fail_verification = config.getboolean('Download', 'move_on_fail_verification')
+            self.move_on_fail_verification = config.getboolean("Download", "move_on_fail_verification")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.save_comments = config.getboolean('Download', 'save_comments')
+            self.save_comments = config.getboolean("Download", "save_comments")
         except ConfigParser.NoOptionError:
             pass
         # General settings
         try:
-            self.show_menu = config.getboolean('General', 'show_menu')
+            self.show_menu = config.getboolean("General", "show_menu")
         except ConfigParser.NoOptionError:
             pass
         try:
-            self.hold_window_open = config.getboolean('General', 'hold_window_open')
+            self.hold_window_open = config.getboolean("General", "hold_window_open")
         except ConfigParser.NoOptionError:
             pass
         return
@@ -464,31 +464,31 @@ class config_handler():
     def save_settings(self,settings_path):
         """Save settings to a file"""
         config = ConfigParser.RawConfigParser()
-        config.add_section('Login')
-        config.set('Login', 'api_key', self.api_key )
-        config.add_section('Download')
-        config.set('Download', 'reverse', str(self.reverse) )
-        config.set('Download', 'output_folder', self.output_folder )
-        config.set('Download', 'download_submission_ids_list', str(self.download_submission_ids_list) )
-        config.set('Download', 'download_query_list', str(self.download_query_list) )
-        config.set('Download', 'output_long_filenames', str(self.output_long_filenames) )
-        config.set('Download', 'input_list_path', self.input_list_path )
-        config.set('Download', 'done_list_path', self.done_list_path )
-        config.set('Download', 'failed_list_path', self.failed_list_path )
-        config.set('Download', 'save_to_query_folder', str(self.save_to_query_folder) )
-        config.set('Download', 'skip_downloads', str(self.skip_downloads) )
-        config.set('Download', 'sequentially_download_everything', str(self.sequentially_download_everything) )
-        config.set('Download', 'go_backwards_when_using_sequentially_download_everything', str(self.go_backwards_when_using_sequentially_download_everything) )
-        config.set('Download', 'download_last_week', str(self.download_last_week) )
-        config.set('Download', 'skip_glob_duplicate_check', str(self.skip_glob_duplicate_check) )
-        config.set('Download', 'skip_known_deleted', str(self.skip_known_deleted) )
-        config.set('Download', 'deleted_submissions_list_path', str(self.deleted_submissions_list_path) )
-        config.set('Download', 'move_on_fail_verification', str(self.move_on_fail_verification) )
-        config.set('Download', 'save_comments', str(self.save_comments) )
-        config.add_section('General')
-        config.set('General', 'show_menu', str(self.show_menu) )
-        config.set('General', 'hold_window_open', str(self.hold_window_open) )
-        with open(settings_path, 'wb') as configfile:
+        config.add_section("Login")
+        config.set("Login", "api_key", self.api_key )
+        config.add_section("Download")
+        config.set("Download", "reverse", str(self.reverse) )
+        config.set("Download", "output_folder", self.output_folder )
+        config.set("Download", "download_submission_ids_list", str(self.download_submission_ids_list) )
+        config.set("Download", "download_query_list", str(self.download_query_list) )
+        config.set("Download", "output_long_filenames", str(self.output_long_filenames) )
+        config.set("Download", "input_list_path", self.input_list_path )
+        config.set("Download", "done_list_path", self.done_list_path )
+        config.set("Download", "failed_list_path", self.failed_list_path )
+        config.set("Download", "save_to_query_folder", str(self.save_to_query_folder) )
+        config.set("Download", "skip_downloads", str(self.skip_downloads) )
+        config.set("Download", "sequentially_download_everything", str(self.sequentially_download_everything) )
+        config.set("Download", "go_backwards_when_using_sequentially_download_everything", str(self.go_backwards_when_using_sequentially_download_everything) )
+        config.set("Download", "download_last_week", str(self.download_last_week) )
+        config.set("Download", "skip_glob_duplicate_check", str(self.skip_glob_duplicate_check) )
+        config.set("Download", "skip_known_deleted", str(self.skip_known_deleted) )
+        config.set("Download", "deleted_submissions_list_path", str(self.deleted_submissions_list_path) )
+        config.set("Download", "move_on_fail_verification", str(self.move_on_fail_verification) )
+        config.set("Download", "save_comments", str(self.save_comments) )
+        config.add_section("General")
+        config.set("General", "show_menu", str(self.show_menu) )
+        config.set("General", "hold_window_open", str(self.hold_window_open) )
+        with open(settings_path, "wb") as configfile:
             config.write(configfile)
         return
 
@@ -612,10 +612,10 @@ def setup_browser():
     # Follows refresh 0 but not hangs on refresh > 0
     br.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
     # User-Agent (this is cheating, ok?)
-    #br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
-    #br.addheaders = [('User-agent', 'Trixie is worst pony')]#[13:57] <%barbeque> as long as it's not something like "trixie is worst pony"
+    #br.addheaders = [("User-agent", "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1")]
+    #br.addheaders = [("User-agent", "Trixie is worst pony")]#[13:57] <%barbeque> as long as it's not something like "trixie is worst pony"
     #print "trixie is worst pony"
-    br.addheaders = [('User-agent', 'derpibooru_dl.py - https://github.com/woodenphone/Derpibooru-dl')] # Let's make it easy for the admins to see us so if something goes wrong we'll find out about it.
+    br.addheaders = [("User-agent", "derpibooru_dl.py - https://github.com/woodenphone/Derpibooru-dl")] # Let's make it easy for the admins to see us so if something goes wrong we'll find out about it.
     return
 
 
@@ -1183,7 +1183,7 @@ def walk_for_file_paths(start_path):
     assert(type(start_path) == type(""))
     matches = []
     for root, dirs, files in os.walk(start_path):
-        dirs[:] = [d for d in dirs if d not in ['json']]# Scanning /json/ is far too slow for large folders, skip it.
+        dirs[:] = [d for d in dirs if d not in ["json"]]# Scanning /json/ is far too slow for large folders, skip it.
         c = 1
         logging.debug("root: "+root)
         for filename in files:
@@ -1255,7 +1255,7 @@ def verify_saved_submission(settings,target_file_path):
     # http://www.pythoncentral.io/hashing-files-with-python/
     BLOCKSIZE = 65536
     hasher = hashlib.sha512()
-    with open(submission_path, 'rb') as afile:
+    with open(submission_path, "rb") as afile:
         buf = afile.read(BLOCKSIZE)
         while len(buf) > 0:
             hasher.update(buf)
@@ -1524,7 +1524,7 @@ def main():
     return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Setup logging
     setup_logging(os.path.join("debug","derpibooru_dl_log.txt"))
     try:
