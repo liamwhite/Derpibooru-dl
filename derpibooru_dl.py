@@ -200,42 +200,6 @@ def delay(basetime,upperrandom=0):
     time.sleep(sleeptime)
 
 
-def sanitizepath(pathin):
-    """Do not use for derpibooru"""
-    #from pathsanitizer
-    #sanitize a filepath for use on windows
-    #http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
-    assert(type(pathin)==type(""))
-    segments = []
-    workingpath = pathin# make a copy for easier debugging
-    #print "sanitizepathdebug! workingpath", workingpath
-    #split the path into segments
-    while True:
-        workingpath, segment = os.path.split(workingpath)
-        segments.append(segment)
-        #print "sanitizepathdebug! segments, segment", segments, segment
-        if len(workingpath) <= 1:
-            break
-    segments.reverse()
-    #sanitize segments
-    precessedsegments = []
-    for segment in segments:
-        s0 = re.sub("[^A-Za-z0-9\ \.\_]+", "-", segment)#remove all non-alphanumeric
-        s1 = s0.strip()#strip whitespace so it doesn't get turned into hyphens
-        s2 = re.sub("[<>:"/\|?*]+", "-",s1)#remove forbidden characters
-        s3 = s2.strip()#strip whitespace
-        s4 = s3.strip(".-")#strip characters that shouldn't be at ends of filenames
-        s5 = re.sub(r"\ +", " ", s4)#remove repeated spaces
-        s6 = re.sub(r"\-+", "-", s5)#remove repeated hyphens
-        s7 = re.sub(r"\_+", "_", s6)#remove repeated underscores
-        s8 = s7.strip()# Strip whitespace
-        precessedsegments.append(s8)
-    #join segments
-    pathout = os.path.join(*precessedsegments)
-    assert(type(pathout)==type(""))
-    return pathout
-
-
 def crossplatform_path_sanitize(path_to_sanitize,remove_repeats=False):
     """Take a desired file path and chop away at it until it fits all platforms path requirements"""
     # Remove disallowed characters
