@@ -77,7 +77,7 @@ def add_http(url):
         #case //derpicdn.net/img/view/...
         first_two_chars = url[0:2]
         if first_two_chars == "//":
-            output_url = "http:"+url
+            output_url = "https:"+url
             return output_url
         else:
             logging.error(repr(locals()))
