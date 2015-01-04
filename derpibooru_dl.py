@@ -587,10 +587,10 @@ def search_for_query(settings,search_query):
     """Perform search for a query on derpibooru.
     Return a lost of found submission IDs"""
     assert_is_string(search_query)
-    logging.debug("Starting search for tag: "+repr(search_query))
+    logging.debug("Starting search for query: "+repr(search_query))
     found_submissions = []
     for image in Search().key(settings.api_key).limit(None).query(search_query):
-        found_submissions.append(image)
+        found_submissions.append(image.id_number)
     return found_submissions
 
 
