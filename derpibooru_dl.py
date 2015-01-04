@@ -30,7 +30,7 @@ import socket
 import hashlib
 import string
 import argparse
-
+import derpibooru
 
 
 # getwithinfo()
@@ -583,100 +583,15 @@ def setup_browser():
     return
 
 
-def load_search_page(settings,search_url):
-    global search_page_dict
-    attempt_counter = 0
-    while attempt_counter <= settings.max_search_page_retries:
-        attempt_counter += 1
-        # Load page
-        search_page = get(search_url)
-        if search_page is None:
-            break
-        #print search_page
-        if len(search_page) < 5:
-            logging.debug("Search page is very small!")
-            logging.debug( repr(locals()) )
-        # Extract submission_ids from page
-        # Convert JSON to dict
-        assert_is_string(search_page)
-        try:
-            search_page_dict = json.loads(search_page)
-        except ValueError, err:
-            logging.error("Failed to read JSON on attempt "+repr(attempt_counter)+"for url"+repr(search_url))
-            logging.error( repr(locals()) )
-            continue
-        page_keys = search_page_dict.keys()
-        #logging.debug(page_keys)
-        first_key = page_keys[0]
-        search_page_list = search_page_dict[first_key]
-        #print search_page_list
-        assert( type( search_page_list ) == type( [] ) )# This should be a list
-        try:
-            # Extract item ids
-            this_page_item_ids = []
-            for item_dict in search_page_list:
-                if item_dict is None:
-                    continue
-                item_id = item_dict["id_number"]
-                this_page_item_ids.append(str(item_id))
-        except TypeError, err:
-            logging.error( repr( type(err ) ) )
-            logging.error( repr(locals()) )
-            logging.debug("saving local variables to pickle")
-            save_pickle(os.path.join("debug","locals.pickle"),locals())
-            logging.exception(err)
-        print this_page_item_ids
-        return this_page_item_ids
-    logging.error("Too many failed retries loading search page, failing.")
-    return
-
-
 def search_for_query(settings,search_query):
     """Perform search for a query on derpibooru.
     Return a lost of found submission IDs"""
     assert_is_string(search_query)
     logging.debug("Starting search for tag: "+repr(search_query))
-    page_counter = 0 # Init counter
-    max_pages = 5000 # Saftey limit
     found_submissions = []
-    last_page_items = []
-    while page_counter <= max_pages:
-        # Incriment page counter
-        page_counter += 1
-        logging.debug("Scanning page "+repr(page_counter)+" for query: "+repr(search_query))
-        # Generate page URL
-        search_url = "https://derpibooru.org/search.json?q="+search_query+"&page="+str(page_counter)+"&key="+settings.api_key+"&nocomments=1&nofave=1"
-        # Load and process page
-        this_page_item_ids = load_search_page(settings,search_url)
-        # Test if submissions seen are duplicates
-        if this_page_item_ids == last_page_items:
-            logging.debug("This pages items match the last pages, stopping search.")
-            break
-        last_page_items = this_page_item_ids
-        # Append this pages item ids to main list
-        found_submissions += this_page_item_ids
-    # Return found items
+    for image in Search().key(settings.api_key).limit(None).query(search_query):
+        found_submissions.append(image)
     return found_submissions
-
-
-def detect_redirect_page(html):
-    """Detect tag redirect notice.
-    If tag is a redirect return the aliased tag. Else return False"""
-    if """) has been aliased to the tag""" in html:
-        # find aliased tag
-        # flash notice">This tag (&#39;yawning&#39;) has been aliased to the tag &#39;yawn&#39;</div><div id="content"
-        redirect_tag_search_regex = """\)\s+?has\s+?been\s+?aliased\s+?to\s+?the\s+?tag\s+?&\#39;([^&]+)&\#39;</div>"""
-        redirect_tag_search = re.search(redirect_tag_search_regex, html)
-        if redirect_tag_search:
-            raw_tag = redirect_tag_search.group(1)
-            # fix for colon not being derpiboorus preferred -colon- e.g. tags/artist:kabutoro
-            if ":" in raw_tag:
-                tag = raw_tag.replace(":", "-colon-")
-                return tag
-            else:
-                return raw_tag
-    else:
-        return False
 
 
 def check_if_deleted_submission(json_dict):
@@ -964,8 +879,10 @@ def clear_pointer_file(settings):
 def get_latest_submission_id(settings):
     """Find the most recent submissions ID"""
     logging.debug("Getting ID of most recent submission...")
-    search_url = "https://derpibooru.org/images.json?key="+settings.api_key+"&nocomments=1&nofave=1"
-    latest_submissions = load_search_page(settings,search_url)
+    latest_submissions = []
+    for image in derpibooru.Search().key(settings.api_key):
+        submission_id = image.id_number
+        latest_submissions.append(submission_id)
     ordered_latest_submissions = sorted(latest_submissions)
     latest_submission_id = int(ordered_latest_submissions[0])
     logging.debug("Most recent submission ID:"+repr(latest_submission_id))
@@ -1403,7 +1320,7 @@ def console_menu(settings,input_file_list):
             # Run automatic batch mode
             run_batch_mode(settings,input_file_list)
             continue
-        elif (menu_data is "x") or (menu_data is "X"):
+        elif (menu_data == "x") or (menu_data == "X"):
             logging.info("Exiting menu.")
             return
         else:
