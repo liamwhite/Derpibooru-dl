@@ -588,8 +588,9 @@ def search_for_query(settings,search_query):
     Return a lost of found submission IDs"""
     assert_is_string(search_query)
     logging.debug("Starting search for query: "+repr(search_query))
+    cleaned_query = convert_tag_string_to_search_string(settings,search_query)
     found_submissions = []
-    for image in Search().key(settings.api_key).limit(None).query(search_query):
+    for image in derpibooru.Search().key(settings.api_key).limit(None).query(cleaned_query):
         found_submissions.append(image.id_number)
     return found_submissions
 
