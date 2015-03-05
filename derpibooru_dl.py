@@ -912,7 +912,7 @@ def download_everything(settings):
     finish_number = latest_submission_id + 50000 # Add 50,000 to account for new submissions added during run
     if settings.go_backwards_when_using_sequentially_download_everything:
         # Swap start and finish numbers for backwards mode
-        start_number, finish_number =  finish_number, start_number
+        start_number, finish_number =  finish_number, latest_submission_id
     download_range(settings,start_number,finish_number)
     return
 
