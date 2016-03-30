@@ -938,7 +938,7 @@ def download_range(settings,start_number,finish_number):
         backwards = True
     else:
         backwards = False
-    assert(finish_number <= 1000000)# less than 1 million, 634,101 submissions as of 23-5-2014
+    assert(finish_number <= 10000000)# less than 10 million, 634,101 submissions as of 23-5-2014
     assert(start_number >= 0)# First submission is ID 0
     assert(type(finish_number) is type(1))# Must be integer
     assert(type(start_number) is type(1))# Must be integer
@@ -950,7 +950,7 @@ def download_range(settings,start_number,finish_number):
     while (loop_counter <= total_submissions_to_attempt ):
         loop_counter += 1
         assert(submission_pointer >= 0)# First submission is ID 0
-        assert(submission_pointer <= 1000000)# less than 1 million, 634,101 submissions as of 23-5-2014
+        assert(finish_number <= 10000000)# less than 10 million, 634,101 submissions as of 23-5-2014
         assert(type(submission_pointer) is type(1))# Must be integer
         # Only save pickle every 1000 items to help avoid pickle corruption
         if (submission_pointer % 1000) == 0:
