@@ -590,7 +590,7 @@ def search_for_query(settings,search_query):
     logging.debug("Starting search for query: "+repr(search_query))
     found_submissions = []
     for image in Search().key(settings.api_key).limit(None).query(search_query):
-        found_submissions.append(image.id_number)
+        found_submissions.append(image.id)
     return found_submissions
 
 
@@ -881,7 +881,7 @@ def get_latest_submission_id(settings):
     logging.debug("Getting ID of most recent submission...")
     latest_submissions = []
     for image in derpibooru.Search().key(settings.api_key):
-        submission_id = image.id_number
+        submission_id = image.id
         latest_submissions.append(submission_id)
     ordered_latest_submissions = sorted(latest_submissions)
     latest_submission_id = int(ordered_latest_submissions[0])
@@ -1124,7 +1124,7 @@ def verify_saved_submission(settings,target_file_path):
     decoded_json = decode_json(json_string)
     # Test the data
     # If ID < 6000 or type is .svg, skip tests.
-    id_from_json = str(decoded_json["id_number"])
+    id_from_json = str(decoded_json["id"])
     if int(id_from_json) < 6000:
         logging.info("ID below 6000, skipping tests due to unreliable hash.")
         return None
