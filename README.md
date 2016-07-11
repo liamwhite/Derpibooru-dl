@@ -15,7 +15,7 @@ There are two ways to run Derpibooru_dl, from a windows executable or directly f
 - You need to have Python version **2.6 or 2.7** installed first. [You can download it here.
 ](https://www.python.org/download/)
 - Then you need pip installed. [See here for the docs](http://pip.readthedocs.org/en/latest/installing.html).
-- Then in your command line, do `pip install mechanize derpibooru`.
+- Then in your command line, do `pip install mechanize derpybooru`.
 - Read the configuration section for the next steps.
 
 ### Configuration and running for all versions
