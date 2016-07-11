@@ -1,27 +1,27 @@
 # Derpibooru Downloader
 
 ## Instalation and configuration
-There are two ways to run Derpibooru_dl, a windows executable or directly from the script itself.
+There are two ways to run Derpibooru_dl, from a windows executable or directly from the script itself.
+
 ### Standalone executable version for Windows
 - Suggested for anyone without programming experience.
 - This only contains the downloader itself.
 - Download the latest version (In green at the top) from https://github.com/woodenphone/Derpibooru-dl/releases
-- Extract the contents of the .zip into a folder
-- Read the configuration section for the next steps
+- Extract the contents of the .zip into a folder.
+- Read the configuration section for the next steps.
 
 ### Python scripts
 - This is only suggested for those with experience in using python.
-- You need to have Python installed first. [You can download it here.
+- You need to have Python version **2.6 or 2.7** installed first. [You can download it here.
 ](https://www.python.org/download/)
 - Then you need pip installed. [See here for the docs](http://pip.readthedocs.org/en/latest/installing.html).
-- Then in your command line, do `pip install mechanize`.
-- Read the configuration section for the next steps
+- Then in your command line, do `pip install mechanize derpibooru`.
+- Read the configuration section for the next steps.
 
 ### Configuration and running for all versions
 - We need to run derpibooru_dl to create settings files.
-    - On Windows, using the standalone executable version, run `derpibooru_dl.exe`
-    - On Windows, run `python derpibooru_dl.py`
-    - On Mac and GNU/Linux, run `python derpibooru_dl_nix.py`
+    - On Windows, using the standalone executable version, run `derpibooru_dl.exe`.
+    - On Windows, macOS and GNU/Linux, run `python derpibooru_dl.py` in a command line terminal.
 - Without a valid API key you will not be able to download anything not visible in the default guest view.
 - Copy your API key from [https://derpibooru.org/users/edit](https://derpibooru.org/users/edit)
 - Past it to the appropriate line in the `derpibooru_dl_config.cfg` inside the `config` folder. (e.g. `api_key = Ap1k3Yh3Re`)
@@ -40,13 +40,10 @@ tag-five || tag-six
 - After a tag has been processed, it will be written to the file `derpibooru_done_list.txt`, in the `config` folder.
 - Derpibooru-dl will close itself after it has finished.
 
-
-
-
 ### Explaination of settings:
-For boolean (yes or no) settings, use these: `True` or `False`
+For boolean (yes or no) settings, use these: `True` or `False` (case sensitive!)
 
-````
+````ini
 [Login]
 api_key = **Key used to access API (You will need to fill this in.)**
 
@@ -76,7 +73,7 @@ hold_window_open = **Should the window be kept open after all tasks are done, to
 ### Example of typical settings
 - This configuration should be fine for most users
 - Make sure to use your own API key, the one here is just an example
-````
+````ini
 [Login]
 api_key = Replace_this_with_your_API_key
 
@@ -103,8 +100,6 @@ save_comments = False
 [General]
 show_menu = True
 hold_window_open = True
-
-
 ````
 
 ### Tips and Fixes
@@ -118,4 +113,4 @@ hold_window_open = True
     ````
     Notepad++ [http://www.notepad-plus-plus.org/](http://www.notepad-plus-plus.org/)
     ````
-- I've written a guide with screenshots for the windows .exe releases. [Guide link](http://evil-vortex.com/Guide_2014-10-28.pdf)
+- ~~I've written a guide with screenshots for the windows .exe releases. [Guide link](http://evil-vortex.com/Guide_2014-10-28.pdf)~~
