@@ -1,10 +1,10 @@
 #-------------------------------------------------------------------------------
-# Name:        module1
+# Name:        Derpibooru-dl
 # Purpose:
 #
-# Author:      new
+# Author:      woodenphone
 #
-# Created:     08/02/2014
+# Created:     2014-02-88
 # Copyright:   (c) new 2014
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
@@ -237,7 +237,7 @@ def import_list(listfilename="ERROR.txt"):
     else: # If there is no list, make one
         new_file_text = ("# Add one query per line, Full derpibooru search syntax MAY be available. Enter queries exactly as you would on the site.\n"
         + "# Any line that starts with a hash symbol (#) will be ignored.\n"
-        + "Search syntax help is available at https://derpibooru.org/search/syntax \n"
+        + "# Search syntax help is available at https://derpibooru.org/search/syntax \n"
         + "# Example 1: -(pinkamena, +grimdark)\n"
         + "# Example 2: reversalis")
         list_file = open(listfilename, "w")
@@ -911,7 +911,7 @@ def download_everything(settings):
     finish_number = latest_submission_id + 50000 # Add 50,000 to account for new submissions added during run
     if settings.go_backwards_when_using_sequentially_download_everything:
         # Swap start and finish numbers for backwards mode
-        start_number, finish_number =  finish_number, start_number
+        start_number, finish_number =  latest_submission_id, start_number
     download_range(settings,start_number,finish_number)
     return
 
@@ -937,7 +937,7 @@ def download_range(settings,start_number,finish_number):
         backwards = True
     else:
         backwards = False
-    assert(finish_number <= 1000000)# less than 1 million, 634,101 submissions as of 23-5-2014
+    assert(finish_number <= 2000000)# less than 2 million, 1,252,291 submissions as of 2016-09-18
     assert(start_number >= 0)# First submission is ID 0
     assert(type(finish_number) is type(1))# Must be integer
     assert(type(start_number) is type(1))# Must be integer
@@ -949,7 +949,7 @@ def download_range(settings,start_number,finish_number):
     while (loop_counter <= total_submissions_to_attempt ):
         loop_counter += 1
         assert(submission_pointer >= 0)# First submission is ID 0
-        assert(submission_pointer <= 1000000)# less than 1 million, 634,101 submissions as of 23-5-2014
+        assert(submission_pointer <= 2000000)# less than 2 million, 1,252,291 submissions as of 2016-09-18
         assert(type(submission_pointer) is type(1))# Must be integer
         # Only save pickle every 1000 items to help avoid pickle corruption
         if (submission_pointer % 1000) == 0:
