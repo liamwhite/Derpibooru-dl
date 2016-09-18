@@ -5,7 +5,7 @@
 # Author:      woodenphone
 #
 # Created:     2014-02-88
-# Copyright:   
+# Copyright:   (c) new 2014
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
