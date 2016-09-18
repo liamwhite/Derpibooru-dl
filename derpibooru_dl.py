@@ -230,8 +230,7 @@ def import_list(listfilename="ERROR.txt"):
                     stripped_line = line[:-1]
                 else:
                     stripped_line = line# If no trailing newline exists, we dont need to strip it
-                replaced_line = re.sub(" ", "+", stripped_line)# Replace spaces with plusses
-                query_list.append(replaced_line)# Add the username to the list
+                query_list.append(stripped_line)# Add the username to the list
         list_file.close()
         return query_list
     else: # If there is no list, make one
