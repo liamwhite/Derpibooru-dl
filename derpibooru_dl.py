@@ -1223,10 +1223,13 @@ def verify_api_key(api_key):
     if (len(api_key) != 20):
         logging.error("API key length invalid. Should be 20 chars. Length: "+repr(len(api_key)))
         key_is_valid = False
-    # Test if any characters outside those allowed are in the string (Assuming alphanumeric ascii only)
+    # Test if any characters outside those allowed are in the string
+    # "<%byte[]> it's generated with SecureRandom.urlsafe_base64(rlength).tr('lIO0', 'sxyz')
+    # rlength is 15"
+    # http://apidock.com/ruby/SecureRandom/urlsafe_base64/class
     # http://stackoverflow.com/questions/89909/how-do-i-verify-that-a-string-only-contains-letters-numbers-underscores-and-da
     # Remove any characters that are allowed, if any characters remain we have invalid characters in the string.
-    allowed_characters = string.ascii_letters + string.digits + "-"
+    allowed_characters = string.ascii_letters + string.digits + "-_"# http://apidock.com/ruby/SecureRandom/urlsafe_base64/class
     invalid_characters_in_key = set(api_key) - set(allowed_characters)
     if invalid_characters_in_key:
         logging.error("API key contains invalid characters.")
