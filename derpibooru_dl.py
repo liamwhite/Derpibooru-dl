@@ -1,10 +1,10 @@
 #-------------------------------------------------------------------------------
-# Name:        module1
+# Name:        Derpibooru-dl
 # Purpose:
 #
-# Author:      new
+# Author:      woodenphone
 #
-# Created:     08/02/2014
+# Created:     2014-02-88
 # Copyright:   (c) new 2014
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
@@ -230,14 +230,13 @@ def import_list(listfilename="ERROR.txt"):
                     stripped_line = line[:-1]
                 else:
                     stripped_line = line# If no trailing newline exists, we dont need to strip it
-                replaced_line = re.sub(" ", "+", stripped_line)# Replace spaces with plusses
-                query_list.append(replaced_line)# Add the username to the list
+                query_list.append(stripped_line)# Add the username to the list
         list_file.close()
         return query_list
     else: # If there is no list, make one
         new_file_text = ("# Add one query per line, Full derpibooru search syntax MAY be available. Enter queries exactly as you would on the site.\n"
         + "# Any line that starts with a hash symbol (#) will be ignored.\n"
-        + "Search syntax help is available at https://derpibooru.org/search/syntax \n"
+        + "# Search syntax help is available at https://derpibooru.org/search/syntax \n"
         + "# Example 1: -(pinkamena, +grimdark)\n"
         + "# Example 2: reversalis")
         list_file = open(listfilename, "w")
@@ -588,10 +587,9 @@ def search_for_query(settings,search_query):
     Return a lost of found submission IDs"""
     assert_is_string(search_query)
     logging.debug("Starting search for query: "+repr(search_query))
-    cleaned_query = convert_tag_string_to_search_string(settings,search_query)
     found_submissions = []
-    for image in derpibooru.Search().key(settings.api_key).limit(None).query(cleaned_query):
-        found_submissions.append(image.id_number)
+    for image in derpibooru.Search().key(settings.api_key).limit(None).query(search_query):
+        found_submissions.append(image.id)
     return found_submissions
 
 
@@ -882,7 +880,7 @@ def get_latest_submission_id(settings):
     logging.debug("Getting ID of most recent submission...")
     latest_submissions = []
     for image in derpibooru.Search().key(settings.api_key):
-        submission_id = image.id_number
+        submission_id = image.id
         latest_submissions.append(submission_id)
     ordered_latest_submissions = sorted(latest_submissions)
     latest_submission_id = int(ordered_latest_submissions[0])
@@ -912,7 +910,7 @@ def download_everything(settings):
     finish_number = latest_submission_id + 50000 # Add 50,000 to account for new submissions added during run
     if settings.go_backwards_when_using_sequentially_download_everything:
         # Swap start and finish numbers for backwards mode
-        start_number, finish_number =  finish_number, latest_submission_id
+        start_number, finish_number =  latest_submission_id, start_number
     download_range(settings,start_number,finish_number)
     return
 
@@ -938,7 +936,7 @@ def download_range(settings,start_number,finish_number):
         backwards = True
     else:
         backwards = False
-    assert(finish_number <= 10000000)# less than 10 million, 634,101 submissions as of 23-5-2014
+    assert(finish_number <= 2000000)# less than 2 million, 1,252,291 submissions as of 2016-09-18
     assert(start_number >= 0)# First submission is ID 0
     assert(type(finish_number) is type(1))# Must be integer
     assert(type(start_number) is type(1))# Must be integer
@@ -950,7 +948,7 @@ def download_range(settings,start_number,finish_number):
     while (loop_counter <= total_submissions_to_attempt ):
         loop_counter += 1
         assert(submission_pointer >= 0)# First submission is ID 0
-        assert(finish_number <= 10000000)# less than 10 million, 634,101 submissions as of 23-5-2014
+        assert(submission_pointer <= 2000000)# less than 2 million, 1,252,291 submissions as of 2016-09-18
         assert(type(submission_pointer) is type(1))# Must be integer
         # Only save pickle every 1000 items to help avoid pickle corruption
         if (submission_pointer % 1000) == 0:
@@ -1125,7 +1123,7 @@ def verify_saved_submission(settings,target_file_path):
     decoded_json = decode_json(json_string)
     # Test the data
     # If ID < 6000 or type is .svg, skip tests.
-    id_from_json = str(decoded_json["id_number"])
+    id_from_json = str(decoded_json["id"])
     if int(id_from_json) < 6000:
         logging.info("ID below 6000, skipping tests due to unreliable hash.")
         return None
@@ -1225,13 +1223,10 @@ def verify_api_key(api_key):
     if (len(api_key) != 20):
         logging.error("API key length invalid. Should be 20 chars. Length: "+repr(len(api_key)))
         key_is_valid = False
-    # Test if any characters outside those allowed are in the string
-    # "<%byte[]> it's generated with SecureRandom.urlsafe_base64(rlength).tr('lIO0', 'sxyz')
-    # rlength is 15"
-    # http://apidock.com/ruby/SecureRandom/urlsafe_base64/class
+    # Test if any characters outside those allowed are in the string (Assuming alphanumeric ascii only)
     # http://stackoverflow.com/questions/89909/how-do-i-verify-that-a-string-only-contains-letters-numbers-underscores-and-da
     # Remove any characters that are allowed, if any characters remain we have invalid characters in the string.
-    allowed_characters = string.ascii_letters + string.digits + "-_"# http://apidock.com/ruby/SecureRandom/urlsafe_base64/class
+    allowed_characters = string.ascii_letters + string.digits + "-"
     invalid_characters_in_key = set(api_key) - set(allowed_characters)
     if invalid_characters_in_key:
         logging.error("API key contains invalid characters.")
